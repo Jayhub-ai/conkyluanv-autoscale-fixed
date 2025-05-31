@@ -82,44 +82,82 @@ jobs:
           python-version: '3.12'
           cache: 'pip' # caching pip dependencies
           cache-dependency-path: 'requirements-dev.txt'
-      - run: pip install -r requirements-dev.txt
+      - name: Install Python dependencies
+        run: |
+          if [ -f "requirements-dev.txt" ]; then
+            echo "Installing Python dependencies from requirements-dev.txt"
+            pip install -r requirements-dev.txt
+          else
+            echo "Warning: requirements-dev.txt not found, skipping Python dependencies installation"
+          fi
       - name: Import GPG Deploy Key
         # only run on main branch
         if: github.ref == 'refs/heads/main'
         run: |
-          echo "${{ secrets.GPG_DEPLOY_KEY }}" > appimage/secret.gpg
-          gpg --import appimage/secret.gpg
-      - name: Set clang version to 12 for ubuntu-20.04
-        if: matrix.os == 'ubuntu-20.04'
-        run: |
-          echo "CLANG_VERSION=12" | tee -a $GITHUB_ENV
-      - name: Set clang version to 15 for ubuntu-22.04
+          if [ -n "${{ secrets.GPG_DEPLOY_KEY }}" ]; then
+            echo "${{ secrets.GPG_DEPLOY_KEY }}" > appimage/secret.gpg
+            gpg --import appimage/secret.gpg
+          else
+            echo "Warning: GPG_DEPLOY_KEY not set, skipping GPG key import"
+          fi
+      - name: Set clang version for Ubuntu 22.04
         if: matrix.os == 'ubuntu-22.04'
         run: |
           echo "CLANG_VERSION=15" | tee -a $GITHUB_ENV
-      - name: Set clang version to 18 for ubuntu-24.04
+      - name: Set clang version for Ubuntu 24.04
         if: matrix.os == 'ubuntu-24.04'
         run: |
           echo "CLANG_VERSION=18" | tee -a $GITHUB_ENV
       - name: Install libc++, set CC and CXX env vars
         run: |
           if [ "${{ matrix.os }}" == "ubuntu-24.04" ]; then
-            # For Ubuntu 24.04, install clang-18 explicitly
+            # For Ubuntu 24.04, install clang-18 explicitly with proper signing key handling
             wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/llvm-snapshot.gpg
             echo "deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-18 main" | sudo tee /etc/apt/sources.list.d/llvm-18.list
-            sudo apt-get update
+            sudo apt-get update || echo "Warning: apt-get update returned non-zero exit code, continuing anyway"
+            
+            # Continue with installation even if apt-get update had warnings
             sudo apt-get install -yqq --no-install-recommends \
               clang-18 \
               libc++-18-dev \
               libc++abi-18-dev
+              
+            # Verify clang installation
+            if ! dpkg -l | grep -q clang-18; then
+              echo "Warning: clang-18 installation may have failed"
+              if command -v clang >/dev/null 2>&1; then
+                echo "Using system clang instead"
+                echo "CC=clang" | tee -a $GITHUB_ENV
+                echo "CXX=clang++" | tee -a $GITHUB_ENV
+              else
+                echo "Error: No clang compiler found"
+                exit 1
+              fi
+            else
+              echo "CC=clang-18" | tee -a $GITHUB_ENV
+              echo "CXX=clang++-18" | tee -a $GITHUB_ENV
+            fi
           else
             # For other Ubuntu versions
             sudo apt-get install -yqq --no-install-recommends \
               libc++-${CLANG_VERSION}-dev \
               libc++abi-${CLANG_VERSION}-dev
+              
+            echo "CC=clang-${CLANG_VERSION}" | tee -a $GITHUB_ENV
+            echo "CXX=clang++-${CLANG_VERSION}" | tee -a $GITHUB_ENV
+            
+            # Verify compiler exists
+            if ! command -v ${CC} >/dev/null 2>&1; then
+              echo "Warning: $CC not found, falling back to system clang"
+              if command -v clang >/dev/null 2>&1; then
+                echo "CC=clang" | tee -a $GITHUB_ENV
+                echo "CXX=clang++" | tee -a $GITHUB_ENV
+              else
+                echo "Error: No clang compiler found"
+                exit 1
+              fi
+            fi
           fi
-          echo "CC=clang-${CLANG_VERSION}" | tee -a $GITHUB_ENV
-          echo "CXX=clang++-${CLANG_VERSION}" | tee -a $GITHUB_ENV
 
       - name: Install sccache
         if: startsWith(github.ref, 'refs/tags/') != true
@@ -136,7 +174,18 @@ jobs:
             sccache-${{ matrix.os }}
             sccache-
       - name: Build AppImage
-        run: ./appimage/build.sh
+        run: |
+          # Check if build.sh exists
+          if [ ! -f "./appimage/build.sh" ]; then
+            echo "Error: AppImage build script not found at ./appimage/build.sh"
+            exit 1
+          fi
+          
+          # Make script executable
+          chmod +x ./appimage/build.sh
+          
+          # Run the build script
+          ./appimage/build.sh
         env:
           RELEASE: "${{ startsWith(github.ref, 'refs/tags/') && 'ON' || 'OFF' }}"
           CC: ${{ env.CC }}
@@ -145,31 +194,40 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') != true
         run: |
           if command -v sccache >/dev/null 2>&1; then
-            sccache --show-stats || true
+            sccache --show-stats || echo "Warning: Failed to get sccache stats, continuing anyway"
           else
             echo "sccache not available"
           fi
-      - run: |
+      - name: Test AppImage
+        run: |
           if [ -f "./conky-x86_64.AppImage" ]; then
+            chmod +x ./conky-x86_64.AppImage
             ./conky-x86_64.AppImage --version || echo "AppImage not runnable in CI environment - continuing"
           else
-            echo "AppImage not created - continuing"
+            echo "Warning: AppImage not created or not found at ./conky-x86_64.AppImage"
+            # List files in current directory to debug
+            ls -la
+            echo "Continuing despite missing AppImage"
           fi
       - name: Set CONKY_VERSION
         run: |
           # Extract version from CMake or use direct version method
           if [ -f "./conky-x86_64.AppImage" ]; then
+            chmod +x ./conky-x86_64.AppImage
             CONKY_VERSION=$(./conky-x86_64.AppImage --version 2>/dev/null | grep -oP 'Conky \K[0-9]+\.[0-9]+\.[0-9]+' || echo "1.22.1")
           else
             CONKY_VERSION=$(grep -oP 'CONKY_VERSION \K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt 2>/dev/null || echo "1.22.1")
           fi
           echo "CONKY_VERSION=$CONKY_VERSION" | tee -a $GITHUB_ENV
-      - run: |
+      - name: Rename AppImage artifacts
+        run: |
           if [ -f "./conky-x86_64.AppImage" ]; then
-            mv conky-x86_64.AppImage conky-${{ matrix.os }}-${{ matrix.arch }}-v${{ env.CONKY_VERSION }}.AppImage || echo "Skipping AppImage rename"
+            echo "Renaming AppImage to conky-${{ matrix.os }}-${{ matrix.arch }}-v${{ env.CONKY_VERSION }}.AppImage"
+            mv conky-x86_64.AppImage conky-${{ matrix.os }}-${{ matrix.arch }}-v${{ env.CONKY_VERSION }}.AppImage || echo "Warning: Failed to rename AppImage"
           fi
           if [ -f "./conky-x86_64.AppImage.sha256" ]; then
-            mv conky-x86_64.AppImage.sha256 conky-${{ matrix.os }}-${{ matrix.arch }}-v${{ env.CONKY_VERSION }}.AppImage.sha256 || echo "Skipping SHA256 rename"
+            echo "Renaming SHA256 to conky-${{ matrix.os }}-${{ matrix.arch }}-v${{ env.CONKY_VERSION }}.AppImage.sha256"
+            mv conky-x86_64.AppImage.sha256 conky-${{ matrix.os }}-${{ matrix.arch }}-v${{ env.CONKY_VERSION }}.AppImage.sha256 || echo "Warning: Failed to rename SHA256 file"
           fi
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4

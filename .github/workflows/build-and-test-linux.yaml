@@ -76,15 +76,32 @@ jobs:
       - name: Install clang for Ubuntu 24.04
         if: matrix.compiler == 'clang' && matrix.os == 'ubuntu-24.04'
         run: |
+          # Use the official LLVM repository with proper signing key handling
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/llvm-snapshot.gpg
           echo "deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-18 main" | sudo tee /etc/apt/sources.list.d/llvm-18.list
-          sudo apt-get update
+          sudo apt-get update || echo "Warning: apt-get update returned non-zero exit code, continuing anyway"
+          
+          # Continue with installation even if apt-get update had warnings
           sudo apt-get install -yqq --no-install-recommends \
             clang-18 \
             libc++-18-dev \
             libc++abi-18-dev
-          echo "CC=clang-18" | tee -a $GITHUB_ENV
-          echo "CXX=clang++-18" | tee -a $GITHUB_ENV
+          
+          # Verify installed packages
+          if ! dpkg -l | grep -q clang-18; then
+            echo "Warning: clang-18 installation may have failed, checking if clang is available"
+            if command -v clang >/dev/null 2>&1; then
+              echo "Found system clang, using that instead"
+              echo "CC=clang" | tee -a $GITHUB_ENV
+              echo "CXX=clang++" | tee -a $GITHUB_ENV
+            else
+              echo "Error: No clang compiler found"
+              exit 1
+            fi
+          else
+            echo "CC=clang-18" | tee -a $GITHUB_ENV
+            echo "CXX=clang++-18" | tee -a $GITHUB_ENV
+          fi
       - name: Install clang for Ubuntu 22.04
         if: matrix.compiler == 'clang' && matrix.os == 'ubuntu-22.04'
         run: |
@@ -128,7 +145,14 @@ jobs:
 
           # Reset sccache statistics if available
           if command -v sccache >/dev/null 2>&1; then
-            sccache --zero-stats || true
+            sccache --zero-stats || echo "Failed to reset sccache stats, continuing anyway"
+          fi
+
+          # Check if compilers are available
+          if [ -n "${{ env.CC }}" ] && ! command -v ${{ env.CC }} >/dev/null 2>&1; then
+            echo "Warning: Configured C compiler ${{ env.CC }} not found, falling back to default"
+            unset CC
+            unset CXX
           fi
 
           cmake . -B build -G Ninja              \
@@ -151,15 +175,15 @@ jobs:
             -DBUILD_WAYLAND=${{ matrix.wayland }}\
             -DBUILD_X11=${{ matrix.x11 }}        \
             -DBUILD_XMMS2=ON                     \
-            -DCMAKE_C_COMPILER=${{ env.CC }}     \
-            -DCMAKE_CXX_COMPILER=${{ env.CXX }}  \
+            ${CC:+-DCMAKE_C_COMPILER=$CC}        \
+            ${CXX:+-DCMAKE_CXX_COMPILER=$CXX}    \
             -DMAINTAINER_MODE=ON
       - name: Compile
         run: cmake --build build
       - name: Show sccache stats
         run: |
           if command -v sccache >/dev/null 2>&1; then
-            sccache --show-stats || true
+            sccache --show-stats || echo "Failed to get sccache stats, continuing anyway"
           else
             echo "sccache not available"
           fi

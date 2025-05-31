@@ -5,7 +5,7 @@ import { SearchIndex, SearchItem } from '../utils/search'
 import { Dialog, Transition, Combobox } from '@headlessui/react'
 import { useRouter } from 'next/router'
 
-export interface SearchProps {}
+export type SearchProps = Record<string, never>;
 
 interface SearchResultProps {
   result: FuseResult<SearchItem>

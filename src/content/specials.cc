@@ -603,7 +603,7 @@ static void graph_append(struct special_node *graph, double f, char showaslog) {
         if(*currentmax == maxspeedval && currentmax == (graph->graph + graph->width - 1)){
           maxspeedval = 1e-47;
         }
-      }
+        }
     }
     if (graph->scale < 1e-47) {
       /* avoid NaN's when the graph is all-zero (e.g. before the first update)

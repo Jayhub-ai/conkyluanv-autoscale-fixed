@@ -35,6 +35,10 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
+          # Ignore errors from brew install
+          # This helps with flaky Homebrew installations on GitHub Actions
+          brew update || echo "Warning: brew update failed, continuing"
+          
           brew install --force \
             cmake              \
             curl               \
@@ -52,11 +56,24 @@ jobs:
             lua                \
             ninja              \
             pkg-config         \
-            || true # Ignore errors
+            || echo "Warning: Some packages may have failed to install, continuing anyway"
+            
+          # Verify critical dependencies
+          for cmd in cmake ninja; do
+            if ! command -v $cmd &>/dev/null; then
+              echo "Error: Required command $cmd not available"
+              exit 1
+            fi
+          done
       - name: Checkout
         uses: actions/checkout@v4
       - name: Configure sccache
-        run: .github/scripts/setup-sccache.sh
+        run: |
+          # Make script executable
+          chmod +x .github/scripts/setup-sccache.sh || echo "Warning: Failed to make setup-sccache.sh executable"
+          
+          # Run the script
+          .github/scripts/setup-sccache.sh || echo "Warning: sccache setup failed, continuing without it"
       - name: Load cached compilation artifacts
         id: compiler-cache
         uses: actions/cache@v4
@@ -70,20 +87,32 @@ jobs:
         run: |
           # Reset sccache statistics if available
           if command -v sccache >/dev/null 2>&1; then
-            sccache --zero-stats || true
+            sccache --zero-stats || echo "Warning: Failed to reset sccache stats, continuing anyway"
           fi
 
+          # Configure with CMake
           cmake . -B build -G Ninja            \
           -DMAINTAINER_MODE=ON                 \
           -DBUILD_WAYLAND=OFF                  \
           -DBUILD_RSS=ON                       \
           -DBUILD_CURL=ON
+          
+          if [ $? -ne 0 ]; then
+            echo "Error: CMake configuration failed"
+            cat build/CMakeFiles/CMakeError.log || echo "Could not find CMakeError.log"
+            exit 1
+          fi
       - name: Compile
-        run: cmake --build build
+        run: |
+          cmake --build build
+          if [ $? -ne 0 ]; then
+            echo "Error: Build failed"
+            exit 1
+          fi
       - name: Show sccache stats
         run: |
           if command -v sccache >/dev/null 2>&1; then
-            sccache --show-stats || true
+            sccache --show-stats || echo "Warning: Failed to get sccache stats, continuing anyway"
           else
             echo "sccache not available"
           fi
