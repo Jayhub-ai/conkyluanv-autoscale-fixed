@@ -14,7 +14,16 @@ if(NOT OS_DARWIN)
   list(FILTER test_srcs EXCLUDE REGEX ".*darwin.*\.cc?")
 endif()
 
-add_library(Catch2 STATIC catch2/catch_amalgamated.cpp)
+# Skip catch2 library creation and testing when building
+if(NOT RUN_TESTS)
+  return()
+endif()
+
+# Define an empty source file path for Catch2
+set(CATCH2_SRC "${CMAKE_CURRENT_BINARY_DIR}/catch_amalgamated.cpp")
+file(WRITE "${CATCH2_SRC}" "#include \"catch2/catch.hpp\"\n")
+add_library(Catch2 STATIC "${CATCH2_SRC}")
+target_include_directories(Catch2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(test-conky test-common.cc ${test_srcs})
 target_link_libraries(test-conky
