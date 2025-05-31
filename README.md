@@ -1,7 +1,7 @@
 # Conky
 
-[![Build and test on Linux](https://github.com/yourusername/conky-lua-nv/actions/workflows/build-and-test-linux.yaml/badge.svg)](https://github.com/yourusername/conky-lua-nv/actions/workflows/build-and-test-linux.yaml)
-[![Build AppImage](https://github.com/yourusername/conky-lua-nv/actions/workflows/publish-appimage.yml/badge.svg)](https://github.com/yourusername/conky-lua-nv/actions/workflows/publish-appimage.yml)
+[![Build and test on Linux](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/build-and-test-linux.yaml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/build-and-test-linux.yaml)
+[![Build AppImage](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/publish-appimage.yml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/publish-appimage.yml)
 
 Conky is a system monitor for X originally based on the torsmo code. Since its original conception, Conky has changed significantly from its predecessor, while maintaining simplicity and configurability. Conky can display just about anything, either on your root desktop or in its own window. Conky has many built-in objects, as well as the ability to execute programs and scripts, then display the output from stdout.
 
@@ -34,8 +34,8 @@ sudo pacman -S base-devel cmake libx11 libxdamage libxft libxinerama libxml2 lib
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/conky-lua-nv.git
-cd conky-lua-nv
+git clone https://github.com/Split1700/conkyluanv-autoscale-fixed.git
+cd conkyluanv-autoscale-fixed
 ```
 
 2. Create a build directory and compile:
@@ -55,7 +55,7 @@ sudo make install
 
 ### Using AppImage
 
-Alternatively, you can download and use the AppImage from the [Releases](https://github.com/yourusername/conky-lua-nv/releases) page:
+Alternatively, you can download and use the AppImage from the [Releases](https://github.com/Split1700/conkyluanv-autoscale-fixed/releases) page:
 
 ```bash
 chmod +x conky-*.AppImage
