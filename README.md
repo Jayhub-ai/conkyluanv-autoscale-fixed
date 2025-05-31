@@ -61,7 +61,7 @@ AppImage builds are configured but not yet available as releases. You can build 
 
 Conky uses a configuration file typically located at `~/.config/conky/conky.conf`. A sample configuration is provided in the `data` directory.
 
-Example configuration to show network graphs with independent scaling:
+Example configuration to show network graphs with independent scaling (change wlan0 to your network adapter):
 
 ```lua
 -- Conky configuration with modified network speed graphs
@@ -84,7 +84,7 @@ ${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gr
 ]]
 ```
 
-Save this Lua script as `~/.config/conky/netspeed_conversion.lua` to display network speeds in Kbps/Mbps:
+Save this Lua script as `~/.config/conky/netspeed_conversion.lua` to display network speeds in Kbps/Mbps (otherwise remove "lua_load" variable from conky.conf):
 
 ```lua
 -- Get the raw value from Conky and turn commas into dots
