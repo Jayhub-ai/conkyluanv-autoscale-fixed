@@ -1,0 +1,21 @@
+changelog:
+  categories:
+    - title: 🏕 Features
+      labels:
+        - feature
+    - title: 🐞 Bug fixes
+      labels:
+        - bug
+        - regression
+    - title: 🎛️ Miscellaneous
+      labels:
+        - '*'
+      exclude:
+        labels:
+          - dependencies
+          - bug
+          - regression
+          - feature
+    - title: 👒 Dependencies
+      labels:
+        - dependencies

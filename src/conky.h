@@ -1,0 +1,398 @@
+/*
+ *
+ * Conky, a system monitor, based on torsmo
+ *
+ * Any original torsmo code is licensed under the BSD license
+ *
+ * All code written since the fork of torsmo is licensed under the GPL
+ *
+ * Please see COPYING for details
+ *
+ * Copyright (c) 2004, Hannu Saransaari and Lauri Hakkarainen
+ * Copyright (c) 2005-2024 Brenden Matthews, Philip Kovacs, et. al.
+ *	(see AUTHORS)
+ * All rights reserved.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef _conky_h_
+#define _conky_h_
+
+#define __STDC_FORMAT_MACROS
+
+#include "config.h"
+
+#include <arpa/inet.h>
+#include <config.h>      /* defines */
+#include <sys/utsname.h> /* struct uname_s */
+#include <csignal>
+#include <filesystem>
+#include <memory>
+
+#include "content/colours.hh"
+#include "common.h" /* at least for struct dns_data */
+#include "lua/luamm.hh"
+
+#if defined(HAS_MCHECK_H)
+#include <mcheck.h>
+#endif /* HAS_MCHECK_H */
+
+#undef EQUAL
+#undef FALSE
+#undef TRUE
+#define EQUAL 0  // returnvalue of strcmp-variants when strings are equal
+#define FALSE 0
+#define TRUE 1
+
+#define DEFAULT_BAR_WIDTH_NO_X 10
+
+#if !defined(__GNUC__)
+#define __attribute__(x) /* nothing */
+#endif
+
+#ifndef HAVE_STRNDUP
+// use our own strndup() if it's not available
+char *strndup(const char *s, size_t n);
+#endif /* HAVE_STRNDUP */
+
+/* headers of optional features
+ * include them here, so we don't need to run the check
+ * in every code file optionally using the feature
+ */
+
+/* forward define to make gcc happy */
+struct text_object;
+
+#ifdef BUILD_HDDTEMP
+#include "data/hardware/hddtemp.h"
+#endif /* BUILD_HDDTEMP */
+
+#ifdef BUILD_MOC
+#include "data/audio/moc.h"
+#endif /* BUILD_MOC */
+
+#ifdef BUILD_MPD
+#include "data/audio/mpd.h"
+#endif /* BUILD_MPD */
+
+#ifdef BUILD_MYSQL
+#include "data/mysql.h"
+#endif /* BUILD_MYSQL */
+
+#ifdef BUILD_PORT_MONITORS
+#include "data/network/tcp-portmon.h"
+#endif
+
+#ifdef BUILD_XMMS2
+#include "data/audio/xmms2.h"
+#endif /* BUILD_XMMS2 */
+
+#ifdef BUILD_APCUPSD
+#include "data/hardware/apcupsd.h"
+#endif /* BUILD_APCUPSD */
+
+/* sony support */
+#include "data/hardware/sony.h"
+
+/* A size for temporary, static buffers to use when
+ * one doesn't know what to choose. Defaults to 256.  */
+extern conky::range_config_setting<unsigned int> text_buffer_size;
+
+struct usr_info {
+  char *names;
+  char *times;
+  char *ctime;
+  char *terms;
+  int number;
+};
+
+#ifdef BUILD_X11
+struct monitor_info {
+  int number;
+  int current;
+};
+
+struct desktop_info {
+  int current;
+  int number;
+  std::string all_names;
+  std::string name;
+};
+
+struct x11_info {
+  struct monitor_info monitor;
+  struct desktop_info desktop;
+};
+
+#endif /* BUILD_X11 */
+
+struct conftree {
+  char *string;
+  struct conftree *horz_next;
+  struct conftree *vert_next;
+  struct conftree *back;
+};
+
+void load_config_file();
+
+char *get_global_text(void);
+extern long global_text_lines;
+
+#define MAX_TEMPLATES 10
+char **get_templates(void);
+
+/* get_battery_stuff() item selector
+ * needed by conky.c, linux.c and freebsd.c */
+enum { BATTERY_STATUS, BATTERY_TIME };
+
+struct information {
+  unsigned int mask;
+
+  struct utsname uname_s;
+#if defined(__DragonFly__)
+  char uname_v[256]; /* with git version */
+#endif
+
+  char freq[10];
+
+  double uptime;
+
+  /* memory information in kilobytes */
+  unsigned long long mem, memwithbuffers, memavail, memeasyfree, memfree,
+      memmax, memdirty, shmem, legacymem, memactive, meminactive, memwired,
+      memlaundry;
+  unsigned long long swap, swapfree, swapmax;
+  unsigned long long bufmem, buffers, cached, free_bufcache, free_cached;
+
+  unsigned short procs;
+  unsigned short run_procs;
+  unsigned short threads;
+  unsigned short run_threads;
+
+  float *cpu_usage;
+  /* struct cpu_stat cpu_summed; what the hell is this? */
+  unsigned int cpu_count;
+
+  float loadavg[3];
+
+#ifdef BUILD_XMMS2
+  struct xmms2_s xmms2;
+#endif /* BUILD_XMMS2 */
+  struct usr_info users;
+  struct process *cpu[10];
+  struct process *memu[10];
+  struct process *time[10];
+#ifdef BUILD_IOSTATS
+  struct process *io[10];
+#endif /* BUILD_IOSTATS */
+  struct process *first_process;
+  unsigned long looped;
+
+#ifdef BUILD_X11
+  struct x11_info x11;
+#endif /* BUILD_X11 */
+
+  short kflags; /* kernel settings, see enum KFLAG */
+
+#if defined(__APPLE__) && defined(__MACH__)
+  /* System Integrity Protection related */
+  struct csr_config_flags {
+    bool csr_allow_untrusted_kexts;
+    bool csr_allow_unrestricted_fs;
+    bool csr_allow_task_for_pid;
+    bool csr_allow_kernel_debugger;
+    bool csr_allow_apple_internal;
+    bool csr_allow_unrestricted_dtrace;
+    bool csr_allow_unrestricted_nvram;
+    bool csr_allow_device_configuration;
+    bool csr_allow_any_recovery_os;
+    bool csr_allow_user_approved_kexts;
+  };
+
+  /* SIP typedefs */
+  typedef csr_config_flags csr_config_flags_t;
+  typedef uint32_t csr_config_t;
+
+  /* SIP variables */
+  csr_config_t csr_config;
+  csr_config_flags_t csr_config_flags;
+#endif /* defined(__APPLE__) && defined(__MACH__) */
+};
+
+class music_player_interval_setting
+    : public conky::simple_config_setting<double> {
+  typedef conky::simple_config_setting<double> Base;
+
+ protected:
+  virtual void lua_setter(lua::state &l, bool init);
+
+ public:
+  music_player_interval_setting() : Base("music_player_interval", 0, true) {}
+};
+extern music_player_interval_setting music_player_interval;
+
+extern conky::range_config_setting<int> cpu_avg_samples;
+extern conky::range_config_setting<int> net_avg_samples;
+extern conky::range_config_setting<int> diskio_avg_samples;
+
+/* needed by linux.c and top.c -> outsource somewhere */
+enum {
+  /* set to true if kernel uses "long" format for /proc/stats */
+  KFLAG_IS_LONGSTAT = 0x01,
+  /* set to true if kernel shows # of threads for the proc value
+   * in sysinfo() call */
+  KFLAG_PROC_IS_THREADS = 0x02
+  /* bits 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 available for future use */
+  /* KFLAG_NEXT_ONE = 0x04 */
+};
+#define KFLAG_SETON(a) info.kflags |= a
+#define KFLAG_SETOFF(a) info.kflags &= (~a)
+#define KFLAG_FLIP(a) info.kflags ^= a
+#define KFLAG_ISSET(a) info.kflags &a
+
+#if !defined(MAX)
+#define MAX(x, y)           \
+  ({                        \
+    __typeof__(x) _x = (x); \
+    __typeof__(y) _y = (y); \
+    _x > _y ? _x : _y;      \
+  })
+#endif
+
+#if !defined(MIN)
+#define MIN(x, y)           \
+  ({                        \
+    __typeof__(x) _x = (x); \
+    __typeof__(y) _y = (y); \
+    _x < _y ? _x : _y;      \
+  })
+#endif
+
+/* defined in conky.c, needed by top.c */
+extern int top_cpu, top_mem, top_time;
+#ifdef BUILD_IOSTATS
+extern int top_io;
+#endif /* BUILD_IOSTATS */
+extern int top_running;
+
+/* struct that has all info to be shared between
+ * instances of the same text object */
+extern struct information info;
+
+/* defined in conky.c */
+extern double current_update_time, last_update_time;
+
+extern conky::range_config_setting<double> update_interval;
+extern conky::range_config_setting<double> update_interval_on_battery;
+double active_update_interval();
+
+extern conky::simple_config_setting<bool> show_graph_scale;
+extern conky::simple_config_setting<bool> show_graph_range;
+extern conky::simple_config_setting<int> gap_x;
+extern conky::simple_config_setting<int> gap_y;
+extern conky::simple_config_setting<bool> draw_borders;
+extern conky::simple_config_setting<bool> draw_graph_borders;
+extern conky::range_config_setting<char> stippled_borders;
+extern conky::simple_config_setting<bool> draw_shades;
+extern conky::simple_config_setting<bool> draw_outline;
+
+void set_current_text_color(Colour colour);
+Colour get_current_text_color(void);
+
+void set_updatereset(int);
+int get_updatereset(void);
+int get_total_updates(void);
+
+/* defined in conky.c */
+int spaced_print(char *, int, const char *, int, ...)
+    __attribute__((format(printf, 3, 5)));
+extern int inotify_fd;
+
+/* defined in conky.c
+ * evaluates 'text' and places the result in 'p' of max length 'p_max_size'
+ */
+void evaluate(const char *text, char *p, int p_max_size);
+
+void parse_conky_vars(struct text_object *, const char *, char *, int);
+
+void extract_object_args_to_sub(struct text_object *, const char *);
+
+void generate_text_internal(char *, int, struct text_object);
+
+void update_text_area();
+void draw_stuff();
+
+int percent_print(char *, int, unsigned);
+void human_readable(long long, char *, int);
+
+#ifdef BUILD_GUI
+
+/* UTF-8 */
+extern conky::simple_config_setting<bool> utf8_mode;
+#endif
+
+/* maximum size of config TEXT buffer, i.e. below TEXT line. */
+extern conky::range_config_setting<unsigned int> max_user_text;
+
+/* path to config file */
+extern std::filesystem::path current_config;
+
+#define DEFAULT_TEXT_BUFFER_SIZE_S "##DEFAULT_TEXT_BUFFER_SIZE"
+
+#define NOBATTERY 0
+
+/* to get rid of 'unused variable' warnings */
+#define UNUSED(a) (void)a
+#define UNUSED_ATTR __attribute__((unused))
+
+template <class T>
+void free_and_zero(T *&ptr) {
+  if (ptr) {
+    free(ptr);
+    ptr = nullptr;
+  }
+}
+
+template <class T>
+void delete_block_and_zero(T *&ptr) {
+  if (ptr) {
+    delete[] ptr;
+    ptr = nullptr;
+  }
+}
+
+extern std::unique_ptr<lua::state> state;
+
+extern conky::simple_config_setting<bool> out_to_stdout;
+
+void setup_inotify();
+void initialisation(int argc, char **argv);
+void set_current_config();
+void main_loop();
+
+extern volatile sig_atomic_t g_sigterm_pending, g_sighup_pending,
+    g_sigusr2_pending;
+
+extern int first_pass;
+extern int argc_copy;
+extern char **argv_copy;
+
+extern const char *getopt_string;
+extern const struct option longopts[];
+
+extern conky::simple_config_setting<bool> out_to_stdout;
+extern conky::simple_config_setting<bool> out_to_stderr;
+
+#endif /* _conky_h_ */
