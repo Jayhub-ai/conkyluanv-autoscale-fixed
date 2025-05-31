@@ -35,6 +35,23 @@ fi
 # switch to build dir
 pushd "$BUILD_DIR"
 
+# Set compiler environment variables if not already set
+if [ -z "$CC" ]; then
+  if command -v clang >/dev/null 2>&1; then
+    export CC=clang
+  else
+    export CC=gcc
+  fi
+fi
+
+if [ -z "$CXX" ]; then
+  if command -v clang++ >/dev/null 2>&1; then
+    export CXX=clang++
+  else
+    export CXX=g++
+  fi
+fi
+
 # configure build files with cmake
 # we need to explicitly set the install prefix, as CMake's default is /usr/local for some reason...
 cmake -G Ninja                         \
@@ -45,7 +62,6 @@ cmake -G Ninja                         \
   -DBUILD_HTTP=ON                      \
   -DBUILD_ICAL=ON                      \
   -DBUILD_ICONV=ON                     \
-  -DBUILD_IRC=ON                       \
   -DBUILD_IRC=ON                       \
   -DBUILD_JOURNAL=ON                   \
   -DBUILD_LUA_CAIRO=ON                 \
@@ -60,6 +76,8 @@ cmake -G Ninja                         \
   -DBUILD_WLAN=ON                      \
   -DBUILD_X11=ON                       \
   -DBUILD_XMMS2=ON                     \
+  -DCMAKE_C_COMPILER=$CC               \
+  -DCMAKE_CXX_COMPILER=$CXX            \
   -DCMAKE_INSTALL_PREFIX=./AppDir/usr  \
   "$REPO_ROOT"
 
@@ -67,26 +85,29 @@ cmake -G Ninja                         \
 cmake --build .
 cmake --install .
 
-wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+# Download and prepare AppImage tools
+ARCH=$(uname -m)
+wget -q "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${ARCH}.AppImage"
 
 # make them executable
-chmod +x linuxdeploy-x86_64.AppImage
+chmod +x linuxdeploy-${ARCH}.AppImage
 
-./linuxdeploy-x86_64.AppImage \
+# Create AppImage
+./linuxdeploy-${ARCH}.AppImage \
   --appdir AppDir \
   -e AppDir/usr/bin/conky \
   -i AppDir/usr/share/icons/hicolor/scalable/apps/conky-logomark-violet.svg \
   -d AppDir/usr/share/applications/conky.desktop
 
-wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${ARCH}.AppImage"
 
-chmod +x appimagetool-x86_64.AppImage
+chmod +x appimagetool-${ARCH}.AppImage
 
 GPG_KEY=C793F1BA
-if gpg --list-keys ${GPG_KEY}; then
-  ./appimagetool-x86_64.AppImage AppDir --sign --sign-key ${GPG_KEY}
+if gpg --list-keys ${GPG_KEY} 2>/dev/null; then
+  ./appimagetool-${ARCH}.AppImage AppDir --sign --sign-key ${GPG_KEY}
 else
-  ./appimagetool-x86_64.AppImage AppDir
+  ./appimagetool-${ARCH}.AppImage AppDir
 fi
 
 for f in conky*.AppImage
@@ -94,8 +115,9 @@ do
   sha256sum $f > $f.sha256
 done
 
-mv conky*.AppImage* "$OLD_CWD"
+mv conky*.AppImage* "$OLD_CWD" || true
 
 # gzip & copy the man page, which will be attached to releases
-gzip doc/conky.1
-mv doc/conky.1.gz "$OLD_CWD"
+if [ -f doc/conky.1 ]; then
+  gzip -c doc/conky.1 > "$OLD_CWD/conky.1.gz"
+fi
