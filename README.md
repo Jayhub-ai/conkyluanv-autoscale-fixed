@@ -53,14 +53,9 @@ make
 sudo make install
 ```
 
-### Using AppImage
+### AppImage Support
 
-Alternatively, you can download and use the AppImage from the [Releases](https://github.com/Split1700/conkyluanv-autoscale-fixed/releases) page:
-
-```bash
-chmod +x conky-*.AppImage
-./conky-*.AppImage
-```
+AppImage builds are configured but not yet available as releases. You can build your own AppImage by using the workflow in `.github/workflows/publish-appimage.yml` as a reference.
 
 ## Configuration
 
