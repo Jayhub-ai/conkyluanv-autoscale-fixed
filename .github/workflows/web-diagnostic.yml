@@ -1,0 +1,109 @@
+name: Web Diagnostics
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+  # Run on pull requests that modify web files
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/**'
+  # Run on pushes to main that modify web files
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+
+jobs:
+  web-diagnostics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        id: npm_install
+        continue-on-error: true
+        working-directory: web
+        run: |
+          npm ci
+          echo "status=$?" >> $GITHUB_OUTPUT
+
+      - name: Install ESLint dependencies
+        if: steps.npm_install.outputs.status == '0'
+        working-directory: web
+        run: |
+          npm install --save-dev @typescript-eslint/eslint-plugin@^7.13.1 @typescript-eslint/parser@^7.13.1 eslint@^8.57.0
+
+      - name: Lint
+        id: lint
+        if: steps.npm_install.outputs.status == '0'
+        continue-on-error: true
+        working-directory: web
+        run: |
+          npm run lint
+          echo "status=$?" >> $GITHUB_OUTPUT
+
+      - name: Build
+        id: build
+        if: steps.npm_install.outputs.status == '0'
+        continue-on-error: true
+        working-directory: web
+        run: |
+          npm run build
+          echo "status=$?" >> $GITHUB_OUTPUT
+
+      - name: Generate diagnostic report
+        if: steps.npm_install.outputs.status != '0' || steps.lint.outputs.status != '0' || steps.build.outputs.status != '0'
+        run: |
+          mkdir -p web_diagnostic_logs
+          
+          # Write a summary file
+          echo "Web Build Diagnostic Summary" > web_diagnostic_logs/summary.txt
+          echo "===========================" >> web_diagnostic_logs/summary.txt
+          echo "" >> web_diagnostic_logs/summary.txt
+          
+          if [ "${{ steps.npm_install.outputs.status }}" != "0" ]; then
+            echo "❌ NPM Install failed with exit code ${{ steps.npm_install.outputs.status }}" >> web_diagnostic_logs/summary.txt
+            echo "This usually indicates dependency issues or corrupted package-lock.json" >> web_diagnostic_logs/summary.txt
+          else
+            echo "✅ NPM Install succeeded" >> web_diagnostic_logs/summary.txt
+          fi
+          
+          if [ "${{ steps.lint.outputs.status }}" != "0" ]; then
+            echo "❌ Lint check failed with exit code ${{ steps.lint.outputs.status }}" >> web_diagnostic_logs/summary.txt
+            echo "This indicates code style issues or TypeScript errors" >> web_diagnostic_logs/summary.txt
+          elif [ "${{ steps.npm_install.outputs.status }}" == "0" ]; then
+            echo "✅ Lint check succeeded" >> web_diagnostic_logs/summary.txt
+          fi
+          
+          if [ "${{ steps.build.outputs.status }}" != "0" ]; then
+            echo "❌ Build failed with exit code ${{ steps.build.outputs.status }}" >> web_diagnostic_logs/summary.txt
+            echo "This indicates TypeScript compilation or bundling errors" >> web_diagnostic_logs/summary.txt
+          elif [ "${{ steps.npm_install.outputs.status }}" == "0" ]; then
+            echo "✅ Build succeeded" >> web_diagnostic_logs/summary.txt
+          fi
+          
+          # Capture package.json
+          cp web/package.json web_diagnostic_logs/ 2>/dev/null || true
+          
+          # Capture tsconfig.json
+          cp web/tsconfig.json web_diagnostic_logs/ 2>/dev/null || true
+          
+          # Capture .eslintrc.json
+          cp web/.eslintrc.json web_diagnostic_logs/ 2>/dev/null || true
+
+      - name: Upload web diagnostic logs
+        if: steps.npm_install.outputs.status != '0' || steps.lint.outputs.status != '0' || steps.build.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-diagnostic-logs
+          path: web_diagnostic_logs/
+          retention-days: 14 

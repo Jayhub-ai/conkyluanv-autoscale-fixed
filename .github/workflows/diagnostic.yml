@@ -1,0 +1,109 @@
+name: Build Diagnostics
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+  # Run on pull requests
+  pull_request:
+    branches: [main]
+  # Run on pushes to main
+  push:
+    branches: [main]
+
+jobs:
+  diagnostic-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libx11-dev libxdamage-dev libxft-dev libxinerama-dev \
+            libxml2-dev libxext-dev libcurl4-openssl-dev liblua5.3-dev libcairo2-dev libimlib2-dev \
+            libxnvctrl-dev audacious-dev libaudclient-dev libdbus-glib-1-dev ninja-build lcov
+
+      - name: Configure with CMake
+        id: configure
+        continue-on-error: true
+        run: |
+          cmake -B build -G Ninja \
+            -DMAINTAINER_MODE=ON \
+            -DBUILD_WAYLAND=ON \
+            -DBUILD_X11=ON \
+            -DBUILD_NVIDIA=ON \
+            -DBUILD_LUA_CAIRO=ON \
+            -DBUILD_LUA_IMLIB2=ON \
+            -DBUILD_RSS=ON
+          
+          # Capture configure status
+          echo "status=$?" >> $GITHUB_OUTPUT
+
+      - name: Compile
+        id: build
+        if: steps.configure.outputs.status == '0'
+        continue-on-error: true
+        run: |
+          cmake --build build
+          echo "status=$?" >> $GITHUB_OUTPUT
+          
+      - name: Test
+        id: test
+        if: steps.build.outputs.status == '0'
+        continue-on-error: true
+        run: |
+          cd build
+          ctest --output-on-failure
+          echo "status=$?" >> $GITHUB_OUTPUT
+
+      - name: Generate error report
+        if: steps.configure.outputs.status != '0' || steps.build.outputs.status != '0' || steps.test.outputs.status != '0'
+        run: |
+          mkdir -p diagnostic_logs
+          
+          # Save CMake error logs if they exist
+          if [ -f "build/CMakeFiles/CMakeError.log" ]; then
+            cp build/CMakeFiles/CMakeError.log diagnostic_logs/
+          fi
+          
+          # Save CMake output logs if they exist
+          if [ -f "build/CMakeFiles/CMakeOutput.log" ]; then
+            cp build/CMakeFiles/CMakeOutput.log diagnostic_logs/
+          fi
+          
+          # Write a summary file
+          echo "Build Diagnostic Summary" > diagnostic_logs/summary.txt
+          echo "=======================" >> diagnostic_logs/summary.txt
+          echo "" >> diagnostic_logs/summary.txt
+          
+          if [ "${{ steps.configure.outputs.status }}" != "0" ]; then
+            echo "❌ Configure step failed with exit code ${{ steps.configure.outputs.status }}" >> diagnostic_logs/summary.txt
+          else
+            echo "✅ Configure step succeeded" >> diagnostic_logs/summary.txt
+          fi
+          
+          if [ "${{ steps.build.outputs.status }}" != "0" ]; then
+            echo "❌ Build step failed with exit code ${{ steps.build.outputs.status }}" >> diagnostic_logs/summary.txt
+          elif [ "${{ steps.configure.outputs.status }}" == "0" ]; then
+            echo "✅ Build step succeeded" >> diagnostic_logs/summary.txt
+          fi
+          
+          if [ "${{ steps.test.outputs.status }}" != "0" ]; then
+            echo "❌ Test step failed with exit code ${{ steps.test.outputs.status }}" >> diagnostic_logs/summary.txt
+          elif [ "${{ steps.build.outputs.status }}" == "0" ]; then
+            echo "✅ Test step succeeded" >> diagnostic_logs/summary.txt
+          fi
+          
+          echo "" >> diagnostic_logs/summary.txt
+          echo "See attached logs for details" >> diagnostic_logs/summary.txt
+
+      - name: Upload diagnostic logs
+        if: steps.configure.outputs.status != '0' || steps.build.outputs.status != '0' || steps.test.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-logs
+          path: diagnostic_logs/
+          retention-days: 14 
