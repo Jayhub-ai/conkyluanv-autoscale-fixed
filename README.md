@@ -79,8 +79,8 @@ conky.config = {
 
 conky.text = [[
 ${color gray}Networking:
-${color gray}Download: $color${lua conky_netspeed enp0s31f6 down} ${alignr}${color gray}Upload: $color${lua conky_netspeed enp0s31f6 up}
-${color gray}${downspeedgraph enp0s31f6 40,180 1B7E1B 32CD32 -t} ${alignr}${color gray}${upspeedgraph enp0s31f6 40,180 831616 B22222 -t}
+${color gray}Download: $color${lua conky_netspeed wlan0 down} ${alignr}${color gray}Upload: $color${lua conky_netspeed wlan0 up}
+${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gray}${upspeedgraph wlan0 40,180 831616 B22222 -t}
 ]]
 ```
 
