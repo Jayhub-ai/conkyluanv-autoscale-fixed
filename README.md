@@ -3,11 +3,15 @@
 [![Build and test on Linux](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/build-and-test-linux.yaml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/build-and-test-linux.yaml)
 [![Build AppImage](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/publish-appimage.yml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/publish-appimage.yml)
 
+---
+
 Conky is a system monitor for X originally based on the torsmo code. Since its original conception, Conky has changed significantly from its predecessor, while maintaining simplicity and configurability. Conky can display just about anything, either on your root desktop or in its own window. Conky has many built-in objects, as well as the ability to execute programs and scripts, then display the output from stdout.
 
 This repository contains a modified version of Conky with enhanced network speed graph functionality allowing independent scaling of upload and download speed graphs.
 
-## Features
+<br>
+
+## ✨ Features
 
 - All standard Conky features
 - Independent scaling for upload and download speed graphs
@@ -15,7 +19,9 @@ This repository contains a modified version of Conky with enhanced network speed
 - NVIDIA GPU monitoring support
 - Network traffic monitoring and graphing
 
-## Getting Started
+<br>
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -28,6 +34,8 @@ sudo apt-get install build-essential cmake libx11-dev libxdamage-dev libxft-dev 
 # Arch Linux
 sudo pacman -S base-devel cmake libx11 libxdamage libxft libxinerama libxml2 libxext curl lua cairo imlib2 nvidia-utils
 ```
+
+<br>
 
 ### Building from Source
 
@@ -53,38 +61,55 @@ make
 sudo make install
 ```
 
+<br>
+
 ### AppImage Support
 
 AppImage builds are configured but not yet available as releases. You can build your own AppImage by using the workflow in `.github/workflows/publish-appimage.yml` as a reference.
 
-## Configuration
+<br>
 
-Conky uses a configuration file typically located at `~/.config/conky/conky.conf`. A sample configuration is provided in the `data` directory.
+## ⚙️ Configuration
 
-Example configuration to show network graphs with independent scaling (change wlan0 to your network adapter):
+Conky uses a configuration file typically located at `~/.config/conky/conky.conf`. There are two ways to configure the network monitoring functionality:
+
+<br>
+
+### Option 1: Standard Configuration (No LUA Required)
+
+This approach uses Conky's built-in variables for network monitoring. It's simpler but displays speeds in KiB/s (kibibytes per second).
 
 ```lua
--- Conky configuration with modified network speed graphs
+-- Standard Conky configuration with built-in network monitoring
 
 conky.config = {
-    alignment = 'top_right',            -- Position of the Conky window on screen
-    background = true,                  -- Run Conky in the background
-    double_buffer = true,               -- Reduces flicker
-    use_xft = true,                     -- Use Xft for font rendering
-    font = 'DejaVu Sans Mono:size=12',  -- Font to use for text
-    draw_graph_borders = true,          -- Draw borders around graphs
-    update_interval = 1.0,              -- Update interval in seconds
-    lua_load = '~/.config/conky/netspeed_conversion.lua', -- Load Lua script for network speed conversion
+    alignment = 'top_right',
+    background = true,
+    double_buffer = true,
+    use_xft = true,
+    font = 'DejaVu Sans Mono:size=12',
+    draw_graph_borders = true,
+    update_interval = 1.0,
 }
 
 conky.text = [[
 ${color gray}Networking:
-${color gray}Download: $color${lua conky_netspeed wlan0 down} ${alignr}${color gray}Upload: $color${lua conky_netspeed wlan0 up}
+${color gray}Download: $color${downspeed wlan0} ${alignr}${color gray}Upload: $color${upspeed wlan0}
 ${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gray}${upspeedgraph wlan0 40,180 831616 B22222 -t}
 ]]
 ```
 
-Save this Lua script as `~/.config/conky/netspeed_conversion.lua` to display network speeds in Kbps/Mbps (otherwise remove "lua_load" variable from conky.conf):
+> **Note:** Replace `wlan0` with your actual network interface name. You can find it by running `ip a` or `ifconfig`.
+
+<br>
+
+### Option 2: Enhanced Configuration (With LUA Script)
+
+This approach uses a LUA script to convert network speeds to Kbps/Mbps (kilobits/megabits per second), which is how internet speeds are typically advertised.
+
+#### Step 1: Create the LUA Script
+
+Save this as `~/.config/conky/netspeed_conversion.lua`:
 
 ```lua
 -- Get the raw value from Conky and turn commas into dots
@@ -114,11 +139,42 @@ function conky_netspeed(dev, dir)
 end
 ```
 
-## License
+#### Step 2: Configure Conky to Use the Script
+
+Update your `~/.config/conky/conky.conf` to load and use the LUA script:
+
+```lua
+-- Enhanced Conky configuration with LUA-based network speed conversion
+
+conky.config = {
+    alignment = 'top_right',
+    background = true,
+    double_buffer = true,
+    use_xft = true,
+    font = 'DejaVu Sans Mono:size=12',
+    draw_graph_borders = true,
+    update_interval = 1.0,
+    lua_load = '~/.config/conky/netspeed_conversion.lua', -- Load our LUA script
+}
+
+conky.text = [[
+${color gray}Networking:
+${color gray}Download: $color${lua conky_netspeed wlan0 down} ${alignr}${color gray}Upload: $color${lua conky_netspeed wlan0 up}
+${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gray}${upspeedgraph wlan0 40,180 831616 B22222 -t}
+]]
+```
+
+> **Note:** Replace `wlan0` with your actual network interface name.
+
+<br>
+
+## 📝 License
 
 This project is licensed under the GPL-3.0 License - see the LICENSE file for details.
 
-## Acknowledgments
+<br>
+
+## 👏 Acknowledgments
 
 * Original Conky developers and contributors
 * The Linux community for continuous support
