@@ -26,6 +26,7 @@ jobs:
       HOMEBREW_NO_INSTALL_UPGRADE: 1
       HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-13
@@ -67,8 +68,10 @@ jobs:
             sccache-
       - name: Configure with CMake
         run: |
-          # Reset sccache statistics
-          sccache --zero-stats
+          # Reset sccache statistics if available
+          if command -v sccache >/dev/null 2>&1; then
+            sccache --zero-stats || true
+          fi
 
           cmake . -B build -G Ninja            \
           -DMAINTAINER_MODE=ON                 \
@@ -78,7 +81,12 @@ jobs:
       - name: Compile
         run: cmake --build build
       - name: Show sccache stats
-        run: sccache --show-stats
+        run: |
+          if command -v sccache >/dev/null 2>&1; then
+            sccache --show-stats || true
+          else
+            echo "sccache not available"
+          fi
       - name: Test
         working-directory: build
         run: ctest --output-on-failure

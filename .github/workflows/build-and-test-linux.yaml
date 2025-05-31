@@ -76,8 +76,8 @@ jobs:
       - name: Install clang for Ubuntu 24.04
         if: matrix.compiler == 'clang' && matrix.os == 'ubuntu-24.04'
         run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-18 main"
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/llvm-snapshot.gpg
+          echo "deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-18 main" | sudo tee /etc/apt/sources.list.d/llvm-18.list
           sudo apt-get update
           sudo apt-get install -yqq --no-install-recommends \
             clang-18 \
@@ -126,8 +126,10 @@ jobs:
           RSVG_ENABLED=ON
           [[ "${{ matrix.os }}" == "ubuntu-20.04"* ]] && RSVG_ENABLED=OFF
 
-          # Reset sccache statistics
-          sccache --zero-stats
+          # Reset sccache statistics if available
+          if command -v sccache >/dev/null 2>&1; then
+            sccache --zero-stats || true
+          fi
 
           cmake . -B build -G Ninja              \
             -DBUILD_AUDACIOUS=ON                 \
@@ -155,7 +157,12 @@ jobs:
       - name: Compile
         run: cmake --build build
       - name: Show sccache stats
-        run: sccache --show-stats
+        run: |
+          if command -v sccache >/dev/null 2>&1; then
+            sccache --show-stats || true
+          else
+            echo "sccache not available"
+          fi
       - name: Test
         working-directory: build
         run: ctest --output-on-failure
