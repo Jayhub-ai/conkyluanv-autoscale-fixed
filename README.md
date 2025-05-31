@@ -14,10 +14,9 @@ This repository contains a modified version of Conky with enhanced network speed
 ## ✨ Features
 
 - All standard Conky features
-- Independent scaling for upload and download speed graphs
+- Improved, independent scaling for upload and download speed graphs
 - LUA scripting support for enhanced customization
 - NVIDIA GPU monitoring support
-- Network traffic monitoring and graphing
 
 <br>
 
