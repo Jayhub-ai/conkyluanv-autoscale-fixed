@@ -29,10 +29,10 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
       - run: npm ci
         working-directory: web
-      - name: Install missing type dependencies
+      - name: Install ESLint dependencies
         run: |
-          # Install missing type declarations that might be causing issues
-          npm install --save-dev @types/react @types/react-dom @types/node
+          # Install ESLint and plugins explicitly
+          npm install --save-dev @typescript-eslint/eslint-plugin@^7.13.1 @typescript-eslint/parser@^7.13.1 eslint@^8.57.0
         working-directory: web
       - name: Lint
         # Continue on error for PRs to prevent blocking merges due to lint issues
