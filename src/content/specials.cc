@@ -577,7 +577,7 @@ static void graph_append(struct special_node *graph, double f, char showaslog) {
         /* If the currentmax is the max_upload_speed and 
          * currentmax location is at the last position
          * Then we reset our max_upload_speed */
-        if (*currentmax == max_upload_speed && currentmax == (graph->graph + graph->width - 1)) {
+        if (*currentmax == max_upload_speed && currentmax == (graph->graph + graph->graph_width - 1)) {
           max_upload_speed = 1e-47;
         }
       } else if (current_graph_type == GRAPH_DOWNLOAD) {
@@ -588,7 +588,7 @@ static void graph_append(struct special_node *graph, double f, char showaslog) {
         /* If the currentmax is the max_download_speed and 
          * currentmax location is at the last position
          * Then we reset our max_download_speed */
-        if (*currentmax == max_download_speed && currentmax == (graph->graph + graph->width - 1)) {
+        if (*currentmax == max_download_speed && currentmax == (graph->graph + graph->graph_width - 1)) {
           max_download_speed = 1e-47;
         }
       } else {
@@ -600,7 +600,7 @@ static void graph_append(struct special_node *graph, double f, char showaslog) {
         /* If the currentmax is the maxspeedval and 
          * currentmax location is at the last position
          * Then we reset our maxspeedval */
-        if(*currentmax == maxspeedval && currentmax == (graph->graph + graph->width - 1)){
+        if(*currentmax == maxspeedval && currentmax == (graph->graph + graph->graph_width - 1)){
           maxspeedval = 1e-47;
         }
         }
