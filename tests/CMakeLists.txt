@@ -19,9 +19,8 @@ if(NOT RUN_TESTS)
   return()
 endif()
 
-# Define an empty source file path for Catch2
-set(CATCH2_SRC "${CMAKE_CURRENT_BINARY_DIR}/catch_amalgamated.cpp")
-file(WRITE "${CATCH2_SRC}" "#include \"catch2/catch.hpp\"\n")
+# Use the catch2_fix directory instead of generating an empty file
+set(CATCH2_SRC "${CMAKE_SOURCE_DIR}/catch2_fix/catch_amalgamated.cpp")
 add_library(Catch2 STATIC "${CATCH2_SRC}")
 target_include_directories(Catch2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 

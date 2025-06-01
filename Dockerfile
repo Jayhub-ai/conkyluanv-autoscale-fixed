@@ -1,4 +1,4 @@
-FROM ubuntu:noble AS builder
+FROM ubuntu:24.04 AS builder
 
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive \
@@ -99,7 +99,7 @@ RUN sh -c 'if [ "$X11" = "yes" ] ; then \
   && cmake --build . \
   && cmake --install .
 
-FROM ubuntu:noble
+FROM ubuntu:24.04
 
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive \
@@ -108,14 +108,14 @@ RUN apt-get update \
   libc++1 \
   libc++abi1 \
   libcairo2 \
-  libcurl4t64 \
+  libcurl4 \
   libdbus-glib-1-2 \
-  libical3t64 \
-  libimlib2t64 \
+  libical3 \
+  libimlib2 \
   libircclient1 \
-  libiw30t64 \
+  libiw30 \
   liblua5.3-0 \
-  libmicrohttpd12t64 \
+  libmicrohttpd12 \
   libmysqlclient21 \
   libncurses6 \
   libpulse0 \
