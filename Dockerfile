@@ -154,8 +154,9 @@ rm -rf /var/lib/apt/lists/*\n\
 
 COPY --from=builder /opt/conky /opt/conky
 
+# Set PATH and LD_LIBRARY_PATH without referencing undefined variables
 ENV PATH="/opt/conky/bin:${PATH}"
-# Initialize LD_LIBRARY_PATH with a default empty value if not set
-ENV LD_LIBRARY_PATH="/opt/conky/lib:${LD_LIBRARY_PATH:-}"
+# Set LD_LIBRARY_PATH using a shell command to handle the case when it's not defined
+ENV LD_LIBRARY_PATH="/opt/conky/lib"
 
 ENTRYPOINT [ "/opt/conky/bin/conky" ]
