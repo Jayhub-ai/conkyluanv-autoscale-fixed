@@ -101,21 +101,18 @@ RUN sh -c 'if [ "$X11" = "yes" ] ; then \
 
 FROM ubuntu:24.04
 
+# Base packages that have consistent names across architectures
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive \
   apt-get install -qy --no-install-recommends \
+  bash \
   libaudclient2 \
   libc++1 \
   libc++abi1 \
   libcairo2 \
-  libcurl4 \
   libdbus-glib-1-2 \
-  libical3 \
-  libimlib2 \
   libircclient1 \
-  libiw30 \
   liblua5.3-0 \
-  libmicrohttpd12 \
   libmysqlclient21 \
   libncurses6 \
   libpulse0 \
@@ -131,9 +128,29 @@ RUN apt-get update \
   libxinerama1 \
   libxml2 \
   libxmmsclient6 \
-  libxnvctrl0 \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+  libxnvctrl0
+
+# Handle architecture-specific package names with a script
+RUN echo '#!/bin/bash\n\
+# Try installing packages with their architecture-specific names first, \n\
+# falling back to the generic name if not available\n\
+function try_install() {\n\
+  DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends "$1" 2>/dev/null || \n\
+  DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends "$2"\n\
+}\n\
+\n\
+try_install libcurl4t64 libcurl4\n\
+try_install libical3t64 libical3\n\
+try_install libimlib2t64 libimlib2\n\
+try_install libiw30t64 libiw30\n\
+try_install libmicrohttpd12t64 libmicrohttpd12\n\
+\n\
+apt-get clean\n\
+rm -rf /var/lib/apt/lists/*\n\
+' > /install-deps.sh \
+  && chmod +x /install-deps.sh \
+  && /install-deps.sh \
+  && rm /install-deps.sh
 
 COPY --from=builder /opt/conky /opt/conky
 
