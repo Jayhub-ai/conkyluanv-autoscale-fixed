@@ -155,6 +155,7 @@ rm -rf /var/lib/apt/lists/*\n\
 COPY --from=builder /opt/conky /opt/conky
 
 ENV PATH="/opt/conky/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/opt/conky/lib:${LD_LIBRARY_PATH}"
+# Initialize LD_LIBRARY_PATH with a default empty value if not set
+ENV LD_LIBRARY_PATH="/opt/conky/lib:${LD_LIBRARY_PATH:-}"
 
 ENTRYPOINT [ "/opt/conky/bin/conky" ]
