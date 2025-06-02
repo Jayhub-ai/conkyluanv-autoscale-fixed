@@ -58,8 +58,6 @@ jobs:
             libxft-dev \
             libxinerama-dev \
             libxml2-dev \
-            libxmmsclient-dev \
-            libxnvctrl-dev \
             ncurses-dev \
             ninja-build \
             wayland-protocols

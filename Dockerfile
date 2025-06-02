@@ -38,50 +38,9 @@ RUN apt-get update \
   libxft-dev \
   libxinerama-dev \
   libxml2-dev \
-  libxmmsclient-dev \
-  libxnvctrl-dev \
   ninja-build \
   patch \
-  || apt-get install -qy --no-install-recommends --fix-missing \
-  audacious-dev \
-  ca-certificates \
-  clang \
-  cmake \
-  curl \
-  gfortran \
-  git \
-  gperf \
-  libarchive-dev \
-  libaudclient-dev \
-  libc++-dev \
-  libc++abi-dev \
-  libcairo2-dev \
-  libcurl4-openssl-dev \
-  libdbus-glib-1-dev \
-  libical-dev \
-  libimlib2-dev \
-  libircclient-dev \
-  libiw-dev \
-  libjsoncpp-dev \
-  liblua5.3-dev \
-  libmicrohttpd-dev \
-  libmysqlclient-dev \
-  libncurses-dev \
-  libpulse-dev \
-  librhash-dev \
-  librsvg2-dev \
-  libssl-dev \
-  libsystemd-dev \
-  libuv1-dev \
-  libxdamage-dev \
-  libxext-dev \
-  libxft-dev \
-  libxinerama-dev \
-  libxml2-dev \
-  libxmmsclient-dev \
-  libxnvctrl-dev \
-  ninja-build \
-  patch \
+  && apt-get -f install \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -106,12 +65,12 @@ RUN sh -c 'if [ "$X11" = "yes" ] ; then \
   -DBUILD_LUA_IMLIB2=ON \
   -DBUILD_LUA_RSVG=ON \
   -DBUILD_MYSQL=ON \
-  -DBUILD_NVIDIA=ON \
+  -DBUILD_NVIDIA=OFF \
   -DBUILD_PULSEAUDIO=ON \
   -DBUILD_RSS=ON \
   -DBUILD_WAYLAND=OFF \
   -DBUILD_WLAN=ON \
-  -DBUILD_XMMS2=ON \
+  -DBUILD_XMMS2=OFF \
   ../ \
   ; else \
   cmake -G Ninja \
@@ -133,7 +92,8 @@ RUN sh -c 'if [ "$X11" = "yes" ] ; then \
   -DBUILD_WAYLAND=OFF \
   -DBUILD_WLAN=ON \
   -DBUILD_X11=OFF \
-  -DBUILD_XMMS2=ON \
+  -DBUILD_XMMS2=OFF \
+  -DBUILD_NVIDIA=OFF \
   ../ \
   ; fi' \
   && cmake --build . \
@@ -167,16 +127,17 @@ RUN apt-get update \
   libxi6 \
   libxinerama1 \
   libxml2 \
-  libxmmsclient6 \
-  libxnvctrl0
+  && apt-get -f install \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 # Handle architecture-specific package names with a script
 RUN echo '#!/bin/bash\n\
 # Try installing packages with their architecture-specific names first, \n\
 # falling back to the generic name if not available\n\
 function try_install() {\n\
-  DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends "$1" 2>/dev/null || \n\
-  DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends "$2"\n\
+  DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends --fix-missing "$1" 2>/dev/null || \n\
+  DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends --fix-missing "$2"\n\
 }\n\
 \n\
 try_install libcurl4t64 libcurl4\n\
@@ -196,7 +157,6 @@ COPY --from=builder /opt/conky /opt/conky
 
 # Set PATH and LD_LIBRARY_PATH without referencing undefined variables
 ENV PATH="/opt/conky/bin:${PATH}"
-# Set LD_LIBRARY_PATH using a shell command to handle the case when it's not defined
 ENV LD_LIBRARY_PATH="/opt/conky/lib"
 
 ENTRYPOINT [ "/opt/conky/bin/conky" ]
