@@ -2,7 +2,47 @@ FROM ubuntu:24.04 AS builder
 
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive \
-  apt-get install -qy --no-install-recommends \
+  apt-get install -qy --no-install-recommends --fix-missing \
+  audacious-dev \
+  ca-certificates \
+  clang \
+  cmake \
+  curl \
+  gfortran \
+  git \
+  gperf \
+  libarchive-dev \
+  libaudclient-dev \
+  libc++-dev \
+  libc++abi-dev \
+  libcairo2-dev \
+  libcurl4-openssl-dev \
+  libdbus-glib-1-dev \
+  libical-dev \
+  libimlib2-dev \
+  libircclient-dev \
+  libiw-dev \
+  libjsoncpp-dev \
+  liblua5.3-dev \
+  libmicrohttpd-dev \
+  libmysqlclient-dev \
+  libncurses-dev \
+  libpulse-dev \
+  librhash-dev \
+  librsvg2-dev \
+  libssl-dev \
+  libsystemd-dev \
+  libuv1-dev \
+  libxdamage-dev \
+  libxext-dev \
+  libxft-dev \
+  libxinerama-dev \
+  libxml2-dev \
+  libxmmsclient-dev \
+  libxnvctrl-dev \
+  ninja-build \
+  patch \
+  || apt-get install -qy --no-install-recommends --fix-missing \
   audacious-dev \
   ca-certificates \
   clang \
@@ -104,7 +144,7 @@ FROM ubuntu:24.04
 # Base packages that have consistent names across architectures
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive \
-  apt-get install -qy --no-install-recommends \
+  apt-get install -qy --no-install-recommends --fix-missing \
   bash \
   libaudclient2 \
   libc++1 \
