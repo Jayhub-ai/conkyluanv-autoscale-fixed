@@ -31,8 +31,8 @@ jobs:
         working-directory: web
       - name: Install ESLint dependencies
         run: |
-          # Install ESLint and plugins explicitly
-          npm install --save-dev --legacy-peer-deps @typescript-eslint/eslint-plugin@^7.13.1 @typescript-eslint/parser@^7.13.1 eslint@^8.57.0
+          # Install ESLint and plugins explicitly with compatible versions
+          npm install --save-dev @typescript-eslint/eslint-plugin@^8.33.0 @typescript-eslint/parser@^8.33.0 eslint@^8.56.0 --legacy-peer-deps
         working-directory: web
       - name: Lint
         # Continue on error for PRs to prevent blocking merges due to lint issues
