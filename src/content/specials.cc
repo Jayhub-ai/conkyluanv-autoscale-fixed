@@ -640,8 +640,16 @@ graph_buf_end:
 }
 
 double *copy_graph(double *original_graph, int graph_width) {
+  if (original_graph == nullptr || graph_width <= 0) {
+    return nullptr;
+  }
+  
   double *new_graph =
       static_cast<double *>(malloc(graph_width * sizeof(double)));
+  
+  if (new_graph == nullptr) {
+    return nullptr;
+  }
 
   memcpy(new_graph, original_graph, graph_width * sizeof(double));
 
@@ -649,8 +657,16 @@ double *copy_graph(double *original_graph, int graph_width) {
 }
 
 double *retrieve_graph(int graph_id, int graph_width) {
+  if (graph_width <= 0) {
+    return nullptr;
+  }
+  
   if (graphs.find(graph_id) == graphs.end()) {
-    return static_cast<double *>(calloc(1, graph_width * sizeof(double)));
+    double *new_graph = static_cast<double *>(calloc(1, graph_width * sizeof(double)));
+    if (new_graph == nullptr) {
+      return nullptr;
+    }
+    return new_graph;
   } else {
     return copy_graph(graphs[graph_id], graph_width);
   }
@@ -658,9 +674,14 @@ double *retrieve_graph(int graph_id, int graph_width) {
 
 void store_graph(int graph_id, struct special_node *s) {
   if (s->graph == nullptr) {
-    graphs[graph_id] = nullptr;
+    if (graphs.find(graph_id) != graphs.end()) {
+      free(graphs[graph_id]);
+      graphs[graph_id] = nullptr;
+    }
   } else {
-    if (graphs.find(graph_id) != graphs.end()) { free(graphs[graph_id]); }
+    if (graphs.find(graph_id) != graphs.end()) {
+      free(graphs[graph_id]);
+    }
     graphs[graph_id] = s->graph;
   }
 }
@@ -687,26 +708,31 @@ void new_graph(struct text_object *obj, char *buf, int buf_max_size,
   if (s->width != 0) { s->graph_width = s->width; }
 
   if (s->graph_width != s->graph_allocated) {
-    auto *graph = static_cast<double *>(
-        realloc(s->graph, s->graph_width * sizeof(double)));
+    auto *graph = s->graph;
+    if (s->graph_width > 0) {
+      graph = static_cast<double *>(
+          realloc(s->graph, s->graph_width * sizeof(double)));
+    }
     DBGP("reallocing graph from %d to %d", s->graph_allocated, s->graph_width);
-    if (s->graph == nullptr) {
-      /* initialize */
-      std::fill_n(graph, s->graph_width, 0.0);
-      s->scale = 100;
-    } else if (graph != nullptr) {
-      if (s->graph_width > s->graph_allocated) {
+    if (graph == nullptr && s->graph_width > 0) {
+      // Reallocation failed, keep old graph
+      DBGP("reallocing FAILED");
+      s->graph_width = s->graph_allocated;
+    } else {
+      if (s->graph == nullptr) {
+        /* initialize */
+        if (graph != nullptr) {
+          std::fill_n(graph, s->graph_width, 0.0);
+        }
+        s->scale = 100;
+      } else if (graph != nullptr && s->graph_width > s->graph_allocated) {
         /* initialize the new region */
         std::fill(graph + s->graph_allocated, graph + s->graph_width, 0.0);
       }
-    } else {
-      DBGP("reallocing FAILED");
-      graph = s->graph;
-      s->graph_width = s->graph_allocated;
+      s->graph = graph;
+      s->graph_allocated = s->graph_width;
+      graphs[g->id] = graph;
     }
-    s->graph = graph;
-    s->graph_allocated = s->graph_width;
-    graphs[g->id] = graph;
   }
   s->height = dpi_scale(g->height);
   s->colours_set = g->colours_set;
@@ -740,7 +766,14 @@ void new_graph(struct text_object *obj, char *buf, int buf_max_size,
   }
 
   if (store_graph_data_explicitly.get(*state)) {
-    if (s->graph) { s->graph = retrieve_graph(g->id, s->graph_width); }
+    if (s->graph) { 
+      double *temp = s->graph;
+      s->graph = retrieve_graph(g->id, s->graph_width);
+      if (temp != graphs[g->id]) {  // Only free if not already stored
+        free(temp);
+        temp = nullptr;
+      }
+    }
 
     graph_append(s, val, g->flags);
 

@@ -152,6 +152,9 @@ const char *dev_name(const char *path) {
 
 static struct text_object *new_text_object_internal() {
   auto *obj = static_cast<text_object *>(malloc(sizeof(struct text_object)));
+  if (obj == nullptr) {
+    return nullptr;
+  }
   memset(obj, 0, sizeof(struct text_object));
   return obj;
 }
@@ -162,6 +165,9 @@ static struct text_object *create_plain_text(const char *s) {
   if (s == nullptr || *s == '\0') { return nullptr; }
 
   obj = new_text_object_internal();
+  if (obj == nullptr) {
+    return nullptr;
+  }
 
   obj_be_plain_text(obj, s);
   return obj;
