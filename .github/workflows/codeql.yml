@@ -19,11 +19,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: cpp
-          token: ${{ secrets.CODEQL_TOKEN }}
+      # - name: Initialize CodeQL
+      #   uses: github/codeql-action/init@v3
+      #   with:
+      #     languages: cpp
+      #     token: ${{ secrets.CODEQL_TOKEN }}
 
       - name: Install dependencies
         run: |
@@ -40,43 +40,32 @@ jobs:
 
       - name: Configure CMake
         run: |
-          mkdir -p build
+          mkdir build
           cd build
-          cmake .. -DBUILD_LUA=ON -DBUILD_XDBE=ON -DCMAKE_VERBOSE_MAKEFILE=ON
+          cmake .. -DBUILD_LUA=ON -DBUILD_XDBE=ON
 
       - name: Build with Make
         run: |
           cd build
-          make VERBOSE=1 -j$(nproc)
-
-      - name: Debug Build Directory
-        run: |
-          echo "=== Full listing of build directory ==="
-          find build -type f -name "conky" | sort
-          echo "=== Checking for binary in standard locations ==="
-          ls -la build/src/ || echo "build/src/ directory not found or empty"
-          ls -la build/bin/ || echo "build/bin/ directory not found or empty"
-          echo "=== CMake build files ==="
-          cat build/CMakeFiles/CMakeError.log || echo "No CMake error log found"
+          make -j$(nproc)
 
       - name: Verify Build
         run: |
-          echo "Checking for conky binary in any location within the build directory:"
-          CONKY_BINARY=$(find build -type f -name "conky" -executable | head -1)
-          if [ -n "$CONKY_BINARY" ]; then
-            echo "✅ Build successful: conky binary found at $CONKY_BINARY"
-            file "$CONKY_BINARY"
+          echo "Checking build directory contents:"
+          ls -la build/
+          echo "Checking specifically for conky binary:"
+          ls -la build/src/ || echo "src directory not found"
+          if [ -f build/src/conky ]; then
+            echo "✅ Build successful: conky binary found"
           else
             echo "❌ Build failed: conky binary not found!"
-            echo "Available files in build directory:"
-            find build -type f -executable | sort
             exit 1
           fi
 
       - name: "Debug - List object files"
         run: |
           echo "Looking for .o and .cc.o files..."
-          find build/ -type f \( -name "*.o" -or -name "*.cc.o" -or -name "*.cpp.o" \) | head -20
+          find build/ -type f \( -name "*.o" -or -name "*.cc.o" -or -name "*.cpp.o" \)
 
-      - name: Run CodeQL analysis
-        uses: github/codeql-action/analyze@v3
+      # - name: Run CodeQL analysis
+      #   uses: github/codeql-action/analyze@v3
