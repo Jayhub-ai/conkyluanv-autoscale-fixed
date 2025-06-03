@@ -20,7 +20,7 @@ jobs:
         with:
           languages: cpp
 
-      - name: Set up dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -30,19 +30,24 @@ jobs:
             libimlib2-dev libxml2-dev \
             libxdamage-dev libxft-dev \
             libxinerama-dev libxext-dev \
-            libxrandr-dev libnvidia-ml-dev || true
+            libxrandr-dev libnvidia-ml-dev
 
-      - name: Configure project with CMake
+      - name: Configure CMake
         run: |
           mkdir build
           cd build
           cmake .. -DBUILD_LUA=ON -DBUILD_XDBE=ON
 
-      - name: Build project
+      - name: Build with Make
         run: |
           cd build
           make -j$(nproc)
 
-      - name: Perform CodeQL Analysis
+      - name: "Debug - List object files"
+        run: |
+          echo "Looking for .o and .cc.o files..."
+          find build/ -type f \( -name "*.o" -or -name "*.cc.o" -or -name "*.cpp.o" \)
+
+      - name: Run CodeQL analysis
         uses: github/codeql-action/analyze@v2
 
