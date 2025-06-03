@@ -51,8 +51,14 @@ jobs:
 
       - name: Verify Build
         run: |
-          if [ ! -f build/my_binary ]; then
-            echo "Build failed: binary not found!"
+          echo "Checking build directory contents:"
+          ls -la build/
+          echo "Checking specifically for conky binary:"
+          ls -la build/src/ || echo "src directory not found"
+          if [ -f build/src/conky ]; then
+            echo "✅ Build successful: conky binary found"
+          else
+            echo "❌ Build failed: conky binary not found!"
             exit 1
           fi
 
