@@ -39,7 +39,7 @@ jobs:
       # Build only, no push - this will test that the Dockerfile builds correctly
       # but won't attempt to push to DockerHub
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
