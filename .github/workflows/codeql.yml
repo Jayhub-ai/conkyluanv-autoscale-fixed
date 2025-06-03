@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: cpp
 
@@ -30,7 +30,8 @@ jobs:
             libimlib2-dev libxml2-dev \
             libxdamage-dev libxft-dev \
             libxinerama-dev libxext-dev \
-            libxrandr-dev libnvidia-ml-dev
+            libxrandr-dev libnvidia-ml-dev \
+            gperf
 
       - name: Configure CMake
         run: |
@@ -49,5 +50,4 @@ jobs:
           find build/ -type f \( -name "*.o" -or -name "*.cc.o" -or -name "*.cpp.o" \)
 
       - name: Run CodeQL analysis
-        uses: github/codeql-action/analyze@v2
-
+        uses: github/codeql-action/analyze@v3
