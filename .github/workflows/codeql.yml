@@ -40,32 +40,43 @@ jobs:
 
       - name: Configure CMake
         run: |
-          mkdir build
+          mkdir -p build
           cd build
-          cmake .. -DBUILD_LUA=ON -DBUILD_XDBE=ON
+          cmake .. -DBUILD_LUA=ON -DBUILD_XDBE=ON -DCMAKE_VERBOSE_MAKEFILE=ON
 
       - name: Build with Make
         run: |
           cd build
-          make -j$(nproc)
+          make VERBOSE=1 -j$(nproc)
+
+      - name: Debug Build Directory
+        run: |
+          echo "=== Full listing of build directory ==="
+          find build -type f -name "conky" | sort
+          echo "=== Checking for binary in standard locations ==="
+          ls -la build/src/ || echo "build/src/ directory not found or empty"
+          ls -la build/bin/ || echo "build/bin/ directory not found or empty"
+          echo "=== CMake build files ==="
+          cat build/CMakeFiles/CMakeError.log || echo "No CMake error log found"
 
       - name: Verify Build
         run: |
-          echo "Checking build directory contents:"
-          ls -la build/
-          echo "Checking specifically for conky binary:"
-          ls -la build/src/ || echo "src directory not found"
-          if [ -f build/src/conky ]; then
-            echo "✅ Build successful: conky binary found"
+          echo "Checking for conky binary in any location within the build directory:"
+          CONKY_BINARY=$(find build -type f -name "conky" -executable | head -1)
+          if [ -n "$CONKY_BINARY" ]; then
+            echo "✅ Build successful: conky binary found at $CONKY_BINARY"
+            file "$CONKY_BINARY"
           else
             echo "❌ Build failed: conky binary not found!"
+            echo "Available files in build directory:"
+            find build -type f -executable | sort
             exit 1
           fi
 
       - name: "Debug - List object files"
         run: |
           echo "Looking for .o and .cc.o files..."
-          find build/ -type f \( -name "*.o" -or -name "*.cc.o" -or -name "*.cpp.o" \)
+          find build/ -type f \( -name "*.o" -or -name "*.cc.o" -or -name "*.cpp.o" \) | head -20
 
       - name: Run CodeQL analysis
         uses: github/codeql-action/analyze@v3
