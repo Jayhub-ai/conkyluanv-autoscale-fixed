@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@grpc/grpc-js": ">=1.13.4",
-    "@tailwindcss/postcss": "^0.1.0",
+    "@tailwindcss/postcss": "^4.1.8",
     "@types/eslint": "^9.6.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.15.29",
