@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   analyze:
     name: CodeQL Analyze
@@ -19,6 +23,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: cpp
+          token: ${{ secrets.CODEQL_TOKEN }}
 
       - name: Install dependencies
         run: |
@@ -43,6 +48,13 @@ jobs:
         run: |
           cd build
           make -j$(nproc)
+
+      - name: Verify Build
+        run: |
+          if [ ! -f build/my_binary ]; then
+            echo "Build failed: binary not found!"
+            exit 1
+          fi
 
       - name: "Debug - List object files"
         run: |
