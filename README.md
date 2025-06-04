@@ -1,6 +1,6 @@
 # Conky
 
-> **NOTICE:** This is a fork of the original Conky project located at [https://github.com/brndnmtthws/conky](https://github.com/brndnmtthws/conky). This fork has been completely edited by Claude 3.7 Sonnet Thinking model.
+> **NOTICE:** This is originally a Conky project located at [https://github.com/brndnmtthws/conky](https://github.com/brndnmtthws/conky). This AUR fork has been completely edited by Claude 3.7 Sonnet Thinking model.
 
 [![Build and test on Linux](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/build-and-test-linux.yaml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/build-and-test-linux.yaml)
 [![Build AppImage](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/publish-appimage.yml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/publish-appimage.yml)
