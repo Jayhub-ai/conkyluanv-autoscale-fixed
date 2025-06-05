@@ -74,11 +74,9 @@ AppImage builds are configured but not yet available as releases. You can build 
 
 ## ⚙️ Configuration
 
-Conky uses a configuration file typically located at `~/.config/conky/conky.conf`. There are two ways to configure the network monitoring functionality:
+Conky uses a configuration file typically located at `~/.config/conky/conky.conf`.
 
-<br>
-
-### Option 1: Standard Configuration (No LUA Required)
+### Standard Configuration
 
 This approach uses Conky's built-in variables for network monitoring. It's simpler but displays speeds in KiB/s (kibibytes per second).
 
@@ -106,7 +104,11 @@ ${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gr
 
 <br>
 
-### Option 2: Enhanced Configuration (With LUA Script)
+## 🛠️ Bonus scripts and configuration
+
+This section contains additional scripts and configurations to enhance your Conky experience.
+
+### Enhanced Network Speed Configuration (With LUA Script)
 
 This approach uses a LUA script to convert network speeds to Kbps/Mbps (kilobits/megabits per second), which is how internet speeds are typically advertised.
 
@@ -168,6 +170,120 @@ ${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gr
 ```
 
 > **Note:** Replace `wlan0` with your actual network interface name.
+
+### Top CPU Applications Script
+
+Displays the top CPU-consuming applications in your Conky display.
+
+Save as `~/.config/conky/top_cpu_apps.sh` and make it executable:
+```bash
+chmod +x ~/.config/conky/top_cpu_apps.sh
+```
+
+To use in your `conky.conf`:
+```lua
+${execpi 10 ~/.config/conky/top_cpu_apps.sh}
+```
+
+This script shows up to 10 applications using the most CPU, with their CPU usage percentage scaled by the number of cores.
+
+### Top Memory Applications Script
+
+Displays the top memory-consuming applications in your Conky display.
+
+Save as `~/.config/conky/top_mem_apps.sh` and make it executable:
+```bash
+chmod +x ~/.config/conky/top_mem_apps.sh
+```
+
+This script requires the `smem` utility to be installed:
+```bash
+# Debian/Ubuntu
+sudo apt install smem
+
+# Arch Linux
+sudo pacman -S smem
+```
+
+To use in your `conky.conf`:
+```lua
+${execpi 30 ~/.config/conky/top_mem_apps.sh}
+```
+
+This script shows up to 10 applications using the most memory, with values in MB or GB.
+
+### Storage Drive Temperature Script
+
+Gets the temperature of a storage device using smartctl.
+
+Save as `~/.config/conky/get_temp.sh` and make it executable:
+```bash
+chmod +x ~/.config/conky/get_temp.sh
+```
+
+This script requires `smartmontools`:
+```bash
+# Debian/Ubuntu
+sudo apt install smartmontools
+
+# Arch Linux
+sudo pacman -S smartmontools
+```
+
+To use in your `conky.conf`:
+```lua
+HDD: ${execpi 30 ~/.config/conky/get_temp.sh /dev/sda}
+SSD: ${execpi 30 ~/.config/conky/get_temp.sh /dev/nvme0n1}
+```
+
+Replace `/dev/sda` and `/dev/nvme0n1` with your actual drive paths.
+
+### CPU Power Monitoring Scripts
+
+A collection of scripts to monitor CPU power consumption using Intel RAPL (Running Average Power Limit) interface.
+
+1. **cpu_power.sh** - Shows current CPU power consumption in watts
+2. **cpu_power_log.sh** - Logs CPU power consumption to /tmp/cpu_power.log
+3. **cpu_power_latest.sh** - Shows the latest power reading from the log
+4. **cpu_power_peak.sh** - Shows the peak power consumption in the last 60 readings
+
+Save these in `~/.config/conky/` and make them executable:
+```bash
+chmod +x ~/.config/conky/cpu_power*.sh
+```
+
+These scripts require the powercap interface to be available (typically on Intel CPUs). Set up a cron job to run the logging script periodically:
+```bash
+# Add to crontab -e
+* * * * * ~/.config/conky/cpu_power_log.sh
+```
+
+To use in your `conky.conf`:
+```lua
+CPU Power: ${execpi 2 ~/.config/conky/cpu_power.sh} W (Peak: ${execpi 10 ~/.config/conky/cpu_power_peak.sh} W)
+```
+
+### Conky Installer Script
+
+A comprehensive script to install and configure Conky with proper dependencies.
+
+Save as `~/.config/conky/install-conky.sh` and make it executable:
+```bash
+chmod +x ~/.config/conky/install-conky.sh
+```
+
+Features:
+- Creates necessary directories (.config/conky, .config/autostart, .fonts)
+- Installs required fonts
+- Checks and installs dependencies based on your Linux distribution
+- Sets up autostart for Conky
+- Copies configuration files to the proper locations
+
+Run with:
+```bash
+cd ~/.config/conky
+./install-conky.sh
+```
 
 <br>
 
