@@ -292,9 +292,44 @@ Replace `/dev/sda` and `/dev/nvme0n1` with your actual drive paths.
 A collection of scripts to monitor CPU power consumption using Intel RAPL (Running Average Power Limit) interface.
 
 1. **cpu_power.sh** - Shows current CPU power consumption in watts
+```bash
+#!/bin/bash
+FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
+START=$(cat "$FILE")
+sleep 1
+END=$(cat "$FILE")
+WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
+echo "${WATTS}"
+```
+
 2. **cpu_power_log.sh** - Logs CPU power consumption to /tmp/cpu_power.log
+```bash
+#!/bin/bash
+FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
+LOG="/tmp/cpu_power.log"
+
+START=$(cat "$FILE")
+sleep 1
+END=$(cat "$FILE")
+WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
+
+# Keep last 60 values
+tail -n 59 "$LOG" 2>/dev/null > "${LOG}.tmp"
+echo "$WATTS" >> "${LOG}.tmp"
+mv "${LOG}.tmp" "$LOG"
+```
+
 3. **cpu_power_latest.sh** - Shows the latest power reading from the log
+```bash
+#!/bin/bash
+tail -n 1 /tmp/cpu_power.log
+```
+
 4. **cpu_power_peak.sh** - Shows the peak power consumption in the last 60 readings
+```bash
+#!/bin/bash
+tail -n 60 /tmp/cpu_power.log | sort -n | tail -n 1 | xargs printf "%.1f\n"
+```
 
 Save these in `~/.config/conky/` and make them executable:
 ```bash
@@ -314,25 +349,31 @@ CPU Power: ${execpi 2 ~/.config/conky/cpu_power.sh} W (Peak: ${execpi 10 ~/.conf
 
 ### Conky Installer Script
 
-A comprehensive script to install and configure Conky with proper dependencies.
+This script is **optional** and separate from the main Conky installation. While building from source installs the Conky binary and necessary libraries, this script helps with setting up your personal Conky environment.
 
-Save as `~/.config/conky/install-conky.sh` and make it executable:
-```bash
-chmod +x ~/.config/conky/install-conky.sh
-```
+**When to use this script:**
+- After installing Conky (either from source or package manager)
+- When you want to set up Conky to start automatically at boot
+- When you need to install fonts, dependencies, and configure directories for Conky
 
-Features:
-- Creates necessary directories (.config/conky, .config/autostart, .fonts)
-- Installs required fonts
-- Checks and installs dependencies based on your Linux distribution
-- Sets up autostart for Conky
+**What this script does:**
+- Creates the necessary configuration directories (`~/.config/conky`, `~/.config/autostart`)
+- Sets up Conky to autostart when you log in
+- Installs the required fonts
+- Installs dependencies based on your Linux distribution
 - Copies configuration files to the proper locations
 
-Run with:
+The script is intended as a one-time setup tool to prepare your system for using Conky with a proper configuration environment.
+
+To use the script:
 ```bash
+# 1. First install Conky from source or package manager
+# 2. Then run the installer script to set up your environment
 cd ~/.config/conky
 ./install-conky.sh
 ```
+
+> **Note:** Review the script content before running it to ensure it's suitable for your system.
 
 <br>
 
