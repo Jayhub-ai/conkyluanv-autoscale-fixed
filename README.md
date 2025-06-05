@@ -351,6 +351,8 @@ CPU Power: ${execpi 2 ~/.config/conky/cpu_power.sh} W (Peak: ${execpi 10 ~/.conf
 
 This script is **optional** and separate from the main Conky installation. While building from source installs the Conky binary and necessary libraries, this script helps with setting up your personal Conky environment.
 
+> **Credit:** This script was originally created by Erik Dubois as part of the [Aureola Conky collection](https://github.com/erikdubois/Aureola). It has been included in this fork as a helpful tool for setting up your Conky environment.
+
 **When to use this script:**
 - After installing Conky (either from source or package manager)
 - When you want to set up Conky to start automatically at boot
