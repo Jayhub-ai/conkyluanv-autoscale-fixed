@@ -27,8 +27,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README with comprehensive documentation of features and scripts
 - Reorganized configuration sections for better readability
 - Extended GitHub workflows for better build testing
-
-### Credits
-- Original project: Conky by Brenden Matthews and contributors
-- Independent network graph scaling by Jayhub-ai
-- Documentation and build system improvements by Neo 
