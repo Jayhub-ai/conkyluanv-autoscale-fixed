@@ -229,6 +229,27 @@ Save as `~/.config/conky/top_cpu_apps.sh` and make it executable:
 chmod +x ~/.config/conky/top_cpu_apps.sh
 ```
 
+Here's the script content:
+```bash
+#!/bin/bash
+
+CORES=$(nproc)
+
+ps -eo comm,pcpu --no-headers | \
+awk -v cores="$CORES" '{
+    cpu[$1] += $2
+}
+END {
+    for (p in cpu)
+        printf "%s %.1f\n", p, cpu[p] / cores
+}' | sort -k2 -nr | head -n 10 | \
+awk '{
+    name = substr($1, 1, 12)
+    while (length(name) < 12) name = name " "
+    printf "${color}${goto 15}|${goto 40}|${goto 60}+--${color3}%-12s %5.1f%%%s\n", name, $2, "${color}"
+}'
+```
+
 To use in your `conky.conf`:
 ```lua
 ${execpi 10 ~/.config/conky/top_cpu_apps.sh}
@@ -243,6 +264,33 @@ Displays the top memory-consuming applications in your Conky display.
 Save as `~/.config/conky/top_mem_apps.sh` and make it executable:
 ```bash
 chmod +x ~/.config/conky/top_mem_apps.sh
+```
+
+Here's the script content:
+```bash
+#!/bin/bash
+
+LIMIT=10
+SMEM_OUT=$(smem -r -c "name pss" 2>/dev/null)
+
+echo "$SMEM_OUT" | \
+awk 'NR>1 {data[$1] += $2} END {
+  for (name in data)
+    printf "%s %.1f\n", name, data[name]/1000
+}' | \
+sort -k2 -nr | head -n "$LIMIT" | \
+awk 'BEGIN { OFS="" }
+{
+  val = $2
+  unit = "MB"
+  if (val >= 1000) {
+    val = val / 1000
+    unit = "GB"
+  }
+  name = substr($1, 1, 12)
+  while (length(name) < 12) name = name " "
+  printf "${color}${goto 262}+--${color3}%-12s %6.1f %s${color}\n", name, val, unit
+}'
 ```
 
 This script requires the `smem` utility to be installed:
@@ -268,6 +316,27 @@ Gets the temperature of a storage device using smartctl.
 Save as `~/.config/conky/get_temp.sh` and make it executable:
 ```bash
 chmod +x ~/.config/conky/get_temp.sh
+```
+
+Here's the script content:
+```bash
+#!/bin/bash
+DEVICE="$1"
+
+sudo /usr/bin/smartctl -A "$DEVICE" \
+  | awk '
+    /Temperature_Celsius|Airflow_Temperature|Composite Temperature/ {
+      match($0, /[0-9]+[[:space:]]+\([^\)]*\)|[0-9]+$/);
+      if (RSTART > 0) {
+        temp = substr($0, RSTART, RLENGTH);
+        gsub(/ .*/, "", temp); # Strip anything after first space (like (Min/Max...))
+        print temp "°C";
+        found = 1;
+        exit;
+      }
+    }
+    END { if (!found) print "N/A" }
+'
 ```
 
 This script requires `smartmontools`:
