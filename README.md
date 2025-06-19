@@ -8,6 +8,14 @@
 [![Docker](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/docker.yaml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/docker.yaml)
 
 ---
+<!-- TOC -->
+- [✨ Features](#-features)
+- [🚀 Getting Started](#-getting-started)
+- [⚙️ Configuration](#️-configuration)
+- [🛠️ Bonus scripts and configuration](#-bonus-scripts-and-configuration)
+- [📝 License](#-license)
+- [👏 Acknowledgments](#-acknowledgments)
+<!-- /TOC -->
 
 Conky is a system monitor for X originally based on the torsmo code. Since its original conception, Conky has changed significantly from its predecessor, while maintaining simplicity and configurability. Conky can display just about anything, either on your root desktop or in its own window. Conky has many built-in objects, as well as the ability to execute programs and scripts, then display the output from stdout.
 
@@ -360,45 +368,12 @@ Replace `/dev/sda` and `/dev/nvme0n1` with your actual drive paths.
 
 A collection of scripts to monitor CPU power consumption using Intel RAPL (Running Average Power Limit) interface.
 
-1. **cpu_power.sh** - Shows current CPU power consumption in watts
-```bash
-#!/bin/bash
-FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
-START=$(cat "$FILE")
-sleep 1
-END=$(cat "$FILE")
-WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
-echo "${WATTS}"
-```
-
-2. **cpu_power_log.sh** - Logs CPU power consumption to /tmp/cpu_power.log
-```bash
-#!/bin/bash
-FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
-LOG="/tmp/cpu_power.log"
-
-START=$(cat "$FILE")
-sleep 1
-END=$(cat "$FILE")
-WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
-
-# Keep last 60 values
-tail -n 59 "$LOG" 2>/dev/null > "${LOG}.tmp"
-echo "$WATTS" >> "${LOG}.tmp"
-mv "${LOG}.tmp" "$LOG"
-```
-
-3. **cpu_power_latest.sh** - Shows the latest power reading from the log
-```bash
-#!/bin/bash
-tail -n 1 /tmp/cpu_power.log
-```
-
-4. **cpu_power_peak.sh** - Shows the peak power consumption in the last 60 readings
-```bash
-#!/bin/bash
-tail -n 60 /tmp/cpu_power.log | sort -n | tail -n 1 | xargs printf "%.1f\n"
-```
+| Script | Purpose |
+|--------|---------|
+| cpu_power.sh | Current CPU power consumption in watts |
+| cpu_power_log.sh | Append one-second sample to /tmp/cpu_power.log |
+| cpu_power_latest.sh | Show the latest power reading from the log |
+| cpu_power_peak.sh | Peak power consumption over the last 60 readings |
 
 Save these in `~/.config/conky/` and make them executable:
 ```bash
