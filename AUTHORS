@@ -248,6 +248,10 @@ Nattfodd <Nattfodd@gmail.com>
 nathanj439 <nathanj439 at users dot sourceforge dot net>
   MPD time fix
 
+NeatCode-Labs <0sftewhny@mozmail.com>
+  Independent scaling for network speed graphs
+  Additional LUA scripts for network monitoring
+
 Nikos Ntarmos <ntarmos at users dot sourceforge dot net>
   FreeBSD total memory patch
 
@@ -369,7 +373,3 @@ zotrix <zotrix at users dot sourceforge dot net>
 
 Daniel Beßler <daniel@orgizm.net>
   argb visual patch
-
-Jayhub-ai <ermywhadc@relay.firefox.com>
-  Independent scaling for network speed graphs
-  Additional LUA scripts for network monitoring
