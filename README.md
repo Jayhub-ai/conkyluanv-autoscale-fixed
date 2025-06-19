@@ -88,6 +88,9 @@ Conky uses a configuration file typically located at `~/.config/conky/conky.conf
 
 When Conky is freshly installed, it uses the following default configuration. This is what you'll get if you don't create your own configuration file:
 
+<details>
+<summary>Click to view default configuration</summary>
+
 ```lua
 -- Conky, a system monitor https://github.com/brndnmtthws/conky
 --
@@ -156,6 +159,7 @@ ${color lightgrey} ${top name 3} ${top pid 3} ${top cpu 3} ${top mem 3}
 ${color lightgrey} ${top name 4} ${top pid 4} ${top cpu 4} ${top mem 4}
 ]]
 ```
+</details>
 
 > **Note:** To customize Conky, copy the above configuration to `~/.config/conky/conky.conf` and modify it to suit your needs.
 
@@ -390,6 +394,58 @@ To use in your `conky.conf`:
 ```lua
 CPU Power: ${execpi 2 ~/.config/conky/cpu_power.sh} W (Peak: ${execpi 10 ~/.config/conky/cpu_power_peak.sh} W)
 ```
+
+<details>
+<summary>cpu_power.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
+START=$(cat "$FILE")
+sleep 1
+END=$(cat "$FILE")
+WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
+echo "${WATTS}"
+```
+</details>
+
+<details>
+<summary>cpu_power_log.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
+LOG="/tmp/cpu_power.log"
+
+START=$(cat "$FILE")
+sleep 1
+END=$(cat "$FILE")
+WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
+
+# Keep last 60 values
+tail -n 59 "$LOG" 2>/dev/null > "${LOG}.tmp"
+echo "$WATTS" >> "${LOG}.tmp"
+mv "${LOG}.tmp" "$LOG"
+```
+</details>
+
+<details>
+<summary>cpu_power_latest.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+tail -n 1 /tmp/cpu_power.log
+```
+</details>
+
+<details>
+<summary>cpu_power_peak.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+tail -n 60 /tmp/cpu_power.log | sort -n | tail -n 1 | xargs printf "%.1f\n"
+```
+</details>
 
 ### Conky Installer Script
 
