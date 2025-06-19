@@ -473,6 +473,10 @@ chmod +x ~/.config/conky/install-conky.sh
 ```
 
 Here's the script content:
+
+<details>
+<summary>install-conky.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 #
@@ -651,6 +655,7 @@ echo "################################################################"
 echo "###################    T H E   E N D      ######################"
 echo "################################################################"
 ```
+</details>
 
 To use the script:
 ```bash
