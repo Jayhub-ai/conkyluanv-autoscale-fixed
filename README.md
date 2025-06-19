@@ -177,6 +177,9 @@ This approach uses a LUA script to convert network speeds to Kbps/Mbps (kilobits
 
 Save this as `~/.config/conky/netspeed_conversion.lua`:
 
+<details>
+<summary>netspeed_conversion.lua (click to expand)</summary>
+
 ```lua
 -- Get the raw value from Conky and turn commas into dots
 local function get_kib(dev, dir)
@@ -204,6 +207,7 @@ function conky_netspeed(dev, dir)
     return fmt_bits(bits)
 end
 ```
+</details>
 
 #### Step 2: Configure Conky to Use the Script
 
@@ -237,11 +241,10 @@ ${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gr
 Displays the top CPU-consuming applications in your Conky display.
 
 Save as `~/.config/conky/top_cpu_apps.sh` and make it executable:
-```bash
-chmod +x ~/.config/conky/top_cpu_apps.sh
-```
 
-Here's the script content:
+<details>
+<summary>top_cpu_apps.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 
@@ -261,6 +264,7 @@ awk '{
     printf "${color}${goto 15}|${goto 40}|${goto 60}+--${color3}%-12s %5.1f%%%s\n", name, $2, "${color}"
 }'
 ```
+</details>
 
 To use in your `conky.conf`:
 ```lua
@@ -274,11 +278,10 @@ This script shows up to 10 applications using the most CPU, with their CPU usage
 Displays the top memory-consuming applications in your Conky display.
 
 Save as `~/.config/conky/top_mem_apps.sh` and make it executable:
-```bash
-chmod +x ~/.config/conky/top_mem_apps.sh
-```
 
-Here's the script content:
+<details>
+<summary>top_mem_apps.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 
@@ -304,6 +307,7 @@ awk 'BEGIN { OFS="" }
   printf "${color}${goto 262}+--${color3}%-12s %6.1f %s${color}\n", name, val, unit
 }'
 ```
+</details>
 
 This script requires the `smem` utility to be installed:
 ```bash
@@ -326,11 +330,10 @@ This script shows up to 10 applications using the most memory, with values in MB
 Gets the temperature of a storage device using smartctl.
 
 Save as `~/.config/conky/get_temp.sh` and make it executable:
-```bash
-chmod +x ~/.config/conky/get_temp.sh
-```
 
-Here's the script content:
+<details>
+<summary>get_temp.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 DEVICE="$1"
@@ -350,6 +353,7 @@ sudo /usr/bin/smartctl -A "$DEVICE" \
     END { if (!found) print "N/A" }
 '
 ```
+</details>
 
 This script requires `smartmontools`:
 ```bash
