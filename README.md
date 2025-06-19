@@ -12,7 +12,7 @@
 - [✨ Features](#-features)
 - [🚀 Getting Started](#-getting-started)
 - [⚙️ Configuration](#️-configuration)
-- [🛠️ Bonus scripts and configuration](#-bonus-scripts-and-configuration)
+- [🛠️ Bonus scripts and configuration](#%EF%B8%8F-bonus-scripts-and-configuration)
 - [📝 License](#-license)
 - [👏 Acknowledgments](#-acknowledgments)
 <!-- /TOC -->
