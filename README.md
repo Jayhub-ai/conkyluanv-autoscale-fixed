@@ -21,6 +21,8 @@ Conky is a system monitor for X originally based on the torsmo code. Since its o
 
 **Key Improvement in This Fork:** This repository contains a modified version of Conky that **fixes the network speed graph functionality** to allow **independent scaling of upload and download speed graphs**. In standard Conky, both graphs use the same scale, which often makes one graph appear tiny when the other is much larger (e.g., when download speeds are much faster than upload speeds). This version enables each graph to scale independently for better visualization.
 
+[▶️ Watch explanatory Youtube video](https://www.youtube.com/watch?v=AqH50KSWfw4)
+
 <br>
 
 ## ✨ Features
