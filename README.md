@@ -21,6 +21,8 @@ Conky is a system monitor for X originally based on the torsmo code. Since its o
 
 **Key Improvement in This Fork:** This repository contains a modified version of Conky that **fixes the network speed graph functionality** to allow **independent scaling of upload and download speed graphs**. In standard Conky, both graphs use the same scale, which often makes one graph appear tiny when the other is much larger (e.g., when download speeds are much faster than upload speeds). This version enables each graph to scale independently for better visualization.
 
+[▶️ Watch explanatory Youtube video](https://www.youtube.com/watch?v=AqH50KSWfw4)
+
 <br>
 
 ## ✨ Features
@@ -398,58 +400,6 @@ To use in your `conky.conf`:
 ```lua
 CPU Power: ${execpi 2 ~/.config/conky/cpu_power.sh} W (Peak: ${execpi 10 ~/.config/conky/cpu_power_peak.sh} W)
 ```
-
-<details>
-<summary>cpu_power.sh (click to expand)</summary>
-
-```bash
-#!/bin/bash
-FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
-START=$(cat "$FILE")
-sleep 1
-END=$(cat "$FILE")
-WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
-echo "${WATTS}"
-```
-</details>
-
-<details>
-<summary>cpu_power_log.sh (click to expand)</summary>
-
-```bash
-#!/bin/bash
-FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
-LOG="/tmp/cpu_power.log"
-
-START=$(cat "$FILE")
-sleep 1
-END=$(cat "$FILE")
-WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
-
-# Keep last 60 values
-tail -n 59 "$LOG" 2>/dev/null > "${LOG}.tmp"
-echo "$WATTS" >> "${LOG}.tmp"
-mv "${LOG}.tmp" "$LOG"
-```
-</details>
-
-<details>
-<summary>cpu_power_latest.sh (click to expand)</summary>
-
-```bash
-#!/bin/bash
-tail -n 1 /tmp/cpu_power.log
-```
-</details>
-
-<details>
-<summary>cpu_power_peak.sh (click to expand)</summary>
-
-```bash
-#!/bin/bash
-tail -n 60 /tmp/cpu_power.log | sort -n | tail -n 1 | xargs printf "%.1f\n"
-```
-</details>
 
 ### CPU Temperature Monitoring Fix
 
