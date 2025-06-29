@@ -474,6 +474,8 @@ fi
 ```
 </details>
 
+**Note:** The provided script assumes your CPU has 4 physical cores (using temp2_input through temp5_input). If your CPU has more or fewer cores, add or remove tempN_input lines accordingly. For example, for a 6-core CPU, add temp6_input and temp7_input, and update the averaging logic to include those sensors. Each tempN_input typically corresponds to a core as labeled in `/sys/class/hwmon/hwmon3/`.
+
 Make the script executable:
 ```bash
 chmod +x ~/.config/conky/cpu_temp_avg.sh
