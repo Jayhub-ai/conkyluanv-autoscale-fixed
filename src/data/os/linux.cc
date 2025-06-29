@@ -118,10 +118,6 @@ static conky::simple_config_setting<bool> top_cpu_separate("top_cpu_separate",
  * using a flag in this manner creates less confusing code. */
 static int prefer_proc = 0;
 
-/* To tell 'print_sysfs_sensor' whether to print the temperature
- * in int or float */
-static const char *temp2 = "empty";
-
 void prepare_update(void) {}
 
 int update_uptime(void) {
@@ -1390,11 +1386,6 @@ static double get_sysfs_info(int *fd, int divisor, char *devtype, char *type) {
 
   /* divide voltage and temperature by 1000 */
   /* or if any other divisor is given, use that */
-  if (0 == (strcmp(type, "temp2"))) {
-    temp2 = "temp2";
-  } else {
-    temp2 = "empty";
-  }
   if (strcmp(type, "tempf") == 0) {
     if (divisor > 1) {
       return ((val / divisor + 40) * 9.0 / 5) - 40;
@@ -1484,7 +1475,7 @@ void print_sysfs_sensor(struct text_object *obj, char *p,
 
   r = r * sf->factor + sf->offset;
 
-  if (0 == (strcmp(temp2, "temp2"))) {
+  if (0 == (strcmp(sf->type, "temp2"))) {
     temp_print(p, p_max_size, r, TEMP_CELSIUS, 0);
   } else if (!strncmp(sf->type, "temp", 4)) {
     temp_print(p, p_max_size, r, TEMP_CELSIUS, 1);

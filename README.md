@@ -8,6 +8,14 @@
 [![Docker](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/docker.yaml/badge.svg)](https://github.com/Split1700/conkyluanv-autoscale-fixed/actions/workflows/docker.yaml)
 
 ---
+<!-- TOC -->
+- [✨ Features](#-features)
+- [🚀 Getting Started](#-getting-started)
+- [⚙️ Configuration](#️-configuration)
+- [🛠️ Bonus scripts and configuration](#%EF%B8%8F-bonus-scripts-and-configuration)
+- [📝 License](#-license)
+- [👏 Acknowledgments](#-acknowledgments)
+<!-- /TOC -->
 
 Conky is a system monitor for X originally based on the torsmo code. Since its original conception, Conky has changed significantly from its predecessor, while maintaining simplicity and configurability. Conky can display just about anything, either on your root desktop or in its own window. Conky has many built-in objects, as well as the ability to execute programs and scripts, then display the output from stdout.
 
@@ -80,6 +88,9 @@ Conky uses a configuration file typically located at `~/.config/conky/conky.conf
 
 When Conky is freshly installed, it uses the following default configuration. This is what you'll get if you don't create your own configuration file:
 
+<details>
+<summary>Click to view default configuration</summary>
+
 ```lua
 -- Conky, a system monitor https://github.com/brndnmtthws/conky
 --
@@ -148,6 +159,7 @@ ${color lightgrey} ${top name 3} ${top pid 3} ${top cpu 3} ${top mem 3}
 ${color lightgrey} ${top name 4} ${top pid 4} ${top cpu 4} ${top mem 4}
 ]]
 ```
+</details>
 
 > **Note:** To customize Conky, copy the above configuration to `~/.config/conky/conky.conf` and modify it to suit your needs.
 
@@ -164,6 +176,9 @@ This approach uses a LUA script to convert network speeds to Kbps/Mbps (kilobits
 #### Step 1: Create the LUA Script
 
 Save this as `~/.config/conky/netspeed_conversion.lua`:
+
+<details>
+<summary>netspeed_conversion.lua (click to expand)</summary>
 
 ```lua
 -- Get the raw value from Conky and turn commas into dots
@@ -192,6 +207,7 @@ function conky_netspeed(dev, dir)
     return fmt_bits(bits)
 end
 ```
+</details>
 
 #### Step 2: Configure Conky to Use the Script
 
@@ -225,11 +241,10 @@ ${color gray}${downspeedgraph wlan0 40,180 1B7E1B 32CD32 -t} ${alignr}${color gr
 Displays the top CPU-consuming applications in your Conky display.
 
 Save as `~/.config/conky/top_cpu_apps.sh` and make it executable:
-```bash
-chmod +x ~/.config/conky/top_cpu_apps.sh
-```
 
-Here's the script content:
+<details>
+<summary>top_cpu_apps.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 
@@ -249,6 +264,7 @@ awk '{
     printf "${color}${goto 15}|${goto 40}|${goto 60}+--${color3}%-12s %5.1f%%%s\n", name, $2, "${color}"
 }'
 ```
+</details>
 
 To use in your `conky.conf`:
 ```lua
@@ -262,11 +278,10 @@ This script shows up to 10 applications using the most CPU, with their CPU usage
 Displays the top memory-consuming applications in your Conky display.
 
 Save as `~/.config/conky/top_mem_apps.sh` and make it executable:
-```bash
-chmod +x ~/.config/conky/top_mem_apps.sh
-```
 
-Here's the script content:
+<details>
+<summary>top_mem_apps.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 
@@ -292,6 +307,7 @@ awk 'BEGIN { OFS="" }
   printf "${color}${goto 262}+--${color3}%-12s %6.1f %s${color}\n", name, val, unit
 }'
 ```
+</details>
 
 This script requires the `smem` utility to be installed:
 ```bash
@@ -314,11 +330,10 @@ This script shows up to 10 applications using the most memory, with values in MB
 Gets the temperature of a storage device using smartctl.
 
 Save as `~/.config/conky/get_temp.sh` and make it executable:
-```bash
-chmod +x ~/.config/conky/get_temp.sh
-```
 
-Here's the script content:
+<details>
+<summary>get_temp.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 DEVICE="$1"
@@ -338,6 +353,7 @@ sudo /usr/bin/smartctl -A "$DEVICE" \
     END { if (!found) print "N/A" }
 '
 ```
+</details>
 
 This script requires `smartmontools`:
 ```bash
@@ -360,45 +376,12 @@ Replace `/dev/sda` and `/dev/nvme0n1` with your actual drive paths.
 
 A collection of scripts to monitor CPU power consumption using Intel RAPL (Running Average Power Limit) interface.
 
-1. **cpu_power.sh** - Shows current CPU power consumption in watts
-```bash
-#!/bin/bash
-FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
-START=$(cat "$FILE")
-sleep 1
-END=$(cat "$FILE")
-WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
-echo "${WATTS}"
-```
-
-2. **cpu_power_log.sh** - Logs CPU power consumption to /tmp/cpu_power.log
-```bash
-#!/bin/bash
-FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
-LOG="/tmp/cpu_power.log"
-
-START=$(cat "$FILE")
-sleep 1
-END=$(cat "$FILE")
-WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
-
-# Keep last 60 values
-tail -n 59 "$LOG" 2>/dev/null > "${LOG}.tmp"
-echo "$WATTS" >> "${LOG}.tmp"
-mv "${LOG}.tmp" "$LOG"
-```
-
-3. **cpu_power_latest.sh** - Shows the latest power reading from the log
-```bash
-#!/bin/bash
-tail -n 1 /tmp/cpu_power.log
-```
-
-4. **cpu_power_peak.sh** - Shows the peak power consumption in the last 60 readings
-```bash
-#!/bin/bash
-tail -n 60 /tmp/cpu_power.log | sort -n | tail -n 1 | xargs printf "%.1f\n"
-```
+| Script | Purpose |
+|--------|---------|
+| cpu_power.sh | Current CPU power consumption in watts |
+| cpu_power_log.sh | Append one-second sample to /tmp/cpu_power.log |
+| cpu_power_latest.sh | Show the latest power reading from the log |
+| cpu_power_peak.sh | Peak power consumption over the last 60 readings |
 
 Save these in `~/.config/conky/` and make them executable:
 ```bash
@@ -415,6 +398,153 @@ To use in your `conky.conf`:
 ```lua
 CPU Power: ${execpi 2 ~/.config/conky/cpu_power.sh} W (Peak: ${execpi 10 ~/.config/conky/cpu_power_peak.sh} W)
 ```
+
+<details>
+<summary>cpu_power.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
+START=$(cat "$FILE")
+sleep 1
+END=$(cat "$FILE")
+WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
+echo "${WATTS}"
+```
+</details>
+
+<details>
+<summary>cpu_power_log.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+FILE="/sys/class/powercap/intel-rapl:0/energy_uj"
+LOG="/tmp/cpu_power.log"
+
+START=$(cat "$FILE")
+sleep 1
+END=$(cat "$FILE")
+WATTS=$(echo "scale=2; ($END - $START)/1000000" | /usr/bin/bc)
+
+# Keep last 60 values
+tail -n 59 "$LOG" 2>/dev/null > "${LOG}.tmp"
+echo "$WATTS" >> "${LOG}.tmp"
+mv "${LOG}.tmp" "$LOG"
+```
+</details>
+
+<details>
+<summary>cpu_power_latest.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+tail -n 1 /tmp/cpu_power.log
+```
+</details>
+
+<details>
+<summary>cpu_power_peak.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+tail -n 60 /tmp/cpu_power.log | sort -n | tail -n 1 | xargs printf "%.1f\n"
+```
+</details>
+
+### CPU Temperature Monitoring Fix
+
+This section addresses a race condition bug in Conky's hwmon temperature sensor implementation that can cause erratic CPU temperature readings.
+
+#### The Problem
+
+The original Conky implementation had a race condition in the hwmon sensor reading code (`src/data/os/linux.cc`) where multiple temperature sensors would share a global variable, causing inconsistent and erratic temperature values when reading CPU temperatures with variables like `${hwmon coretemp temp 1}`.
+
+#### The Fix
+
+This fork includes a fix that eliminates the race condition by:
+
+1. **Removing the global `temp2` variable** that was causing the race condition
+2. **Using local variables** in the `get_sysfs_info()` function instead of global state
+3. **Updating the `print_sysfs_sensor()` function** to use local sensor type information
+
+#### CPU Temperature Averaging Script
+
+For even more stable temperature readings, you can use an average of all CPU core temperatures instead of the package temperature. This provides smoother, more realistic temperature values.
+
+Save this as `~/.config/conky/cpu_temp_avg.sh` and make it executable:
+
+<details>
+<summary>cpu_temp_avg.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+
+# Calculate average CPU temperature from all cores
+# This provides more stable readings than the package temperature
+
+# Get temperatures from all available cores (temp2 through temp5)
+temp2=$(cat /sys/class/hwmon/hwmon3/temp2_input 2>/dev/null || echo "0")
+temp3=$(cat /sys/class/hwmon/hwmon3/temp3_input 2>/dev/null || echo "0")
+temp4=$(cat /sys/class/hwmon/hwmon3/temp4_input 2>/dev/null || echo "0")
+temp5=$(cat /sys/class/hwmon/hwmon3/temp5_input 2>/dev/null || echo "0")
+
+# Count valid temperatures (non-zero)
+count=0
+sum=0
+
+if [ "$temp2" -gt 0 ]; then
+    sum=$((sum + temp2))
+    count=$((count + 1))
+fi
+
+if [ "$temp3" -gt 0 ]; then
+    sum=$((sum + temp3))
+    count=$((count + 1))
+fi
+
+if [ "$temp4" -gt 0 ]; then
+    sum=$((sum + temp4))
+    count=$((count + 1))
+fi
+
+if [ "$temp5" -gt 0 ]; then
+    sum=$((sum + temp5))
+    count=$((count + 1))
+fi
+
+# Calculate average in Celsius (divide by 1000 for millidegrees)
+if [ $count -gt 0 ]; then
+    avg_temp=$((sum / count))
+    # Convert to Celsius with one decimal place
+    celsius=$(echo "scale=1; $avg_temp / 1000" | bc -l)
+    echo "$celsius"
+else
+    echo "N/A"
+fi
+```
+</details>
+
+Make the script executable:
+```bash
+chmod +x ~/.config/conky/cpu_temp_avg.sh
+```
+
+To use in your `conky.conf`, replace:
+```lua
+${hwmon coretemp temp 1} °C
+```
+
+With:
+```lua
+${execi 2 /home/neo/.config/conky/cpu_temp_avg.sh} °C
+```
+
+**Benefits of using the average:**
+- **More stable readings**: Package temperature can spike rapidly due to single-core loads
+- **Realistic values**: Represents the typical CPU temperature across all cores
+- **Less erratic display**: Smoother temperature changes in your Conky display
+
+**Note:** The average will typically be lower than the package temperature since it represents the average across all cores rather than the hottest spot on the CPU package.
 
 ### Conky Installer Script
 
@@ -442,6 +572,10 @@ chmod +x ~/.config/conky/install-conky.sh
 ```
 
 Here's the script content:
+
+<details>
+<summary>install-conky.sh (click to expand)</summary>
+
 ```bash
 #!/bin/bash
 #
@@ -620,6 +754,7 @@ echo "################################################################"
 echo "###################    T H E   E N D      ######################"
 echo "################################################################"
 ```
+</details>
 
 To use the script:
 ```bash
