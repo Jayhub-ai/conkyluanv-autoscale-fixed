@@ -733,21 +733,12 @@ This project is licensed under the GPL-3.0 License - see the LICENSE file for de
 
 ---
 
-<p align="center">
-  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed">conkyluanv-autoscale-fixed</a> by <a href="https://github.com/NeatCode-Labs">NeatCode-Labs</a>
-</p>
+<div align="center">
 
-<p align="center">
-  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="License">
-  </a>
-  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/stargazers">
-    <img src="https://img.shields.io/github/stars/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="Stars">
-  </a>
-  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/network/members">
-    <img src="https://img.shields.io/github/forks/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="Forks">
-  </a>
-  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/issues">
-    <img src="https://img.shields.io/github/issues/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="Issues">
-  </a>
-</p>
+**Created with ❤️ by [NeatCode Labs](https://neatcodelabs.com)**  
+Visit us for more useful tools and projects!
+
+[![Website](https://img.shields.io/badge/Website-neatcodelabs.com-blue?style=for-the-badge)](https://neatcodelabs.com)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Us-ff5e5b?style=for-the-badge&logo=ko-fi)](https://ko-fi.com/neatcodelabs)
+
+</div>
