@@ -730,3 +730,24 @@ This project is licensed under the GPL-3.0 License - see the LICENSE file for de
 
 * Original Conky developers and contributors
 * The Linux community for continuous support
+
+---
+
+<p align="center">
+  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed">conkyluanv-autoscale-fixed</a> by <a href="https://github.com/NeatCode-Labs">NeatCode-Labs</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="License">
+  </a>
+  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/stargazers">
+    <img src="https://img.shields.io/github/stars/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="Stars">
+  </a>
+  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/network/members">
+    <img src="https://img.shields.io/github/forks/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="Forks">
+  </a>
+  <a href="https://github.com/NeatCode-Labs/conkyluanv-autoscale-fixed/issues">
+    <img src="https://img.shields.io/github/issues/NeatCode-Labs/conkyluanv-autoscale-fixed?style=flat-square" alt="Issues">
+  </a>
+</p>
