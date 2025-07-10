@@ -488,7 +488,7 @@ ${hwmon coretemp temp 1} °C
 
 With:
 ```lua
-${execi 2 /home/neo/.config/conky/cpu_temp_avg.sh} °C
+${execi 2 ~/.config/conky/cpu_temp_avg.sh} °C
 ```
 
 **Benefits of using the average:**
@@ -497,6 +497,494 @@ ${execi 2 /home/neo/.config/conky/cpu_temp_avg.sh} °C
 - **Less erratic display**: Smoother temperature changes in your Conky display
 
 **Note:** The average will typically be lower than the package temperature since it represents the average across all cores rather than the hottest spot on the CPU package.
+
+### Hardware-Based Drive Monitoring Scripts
+
+Monitor drive free space by hardware identifiers (serial numbers, model names) instead of mount points. This ensures your monitoring continues to work even when mount points change or drives are remounted.
+
+#### Why Use Hardware-Based Monitoring?
+
+Traditional drive monitoring relies on fixed mount points (like `/mnt/backup` or `/media/user/drive`). However, mount points can change when:
+- System updates modify mounting behavior
+- Drives are mounted by different services (like Timeshift)
+- You switch between manual and automatic mounting
+- Mount locations change between `/media/`, `/mnt/`, or `/run/media/`
+
+This solution identifies drives by their permanent hardware characteristics, making monitoring more reliable.
+
+#### Main Script: find_drive_by_hardware.sh
+
+This is the core script that finds drives by their hardware identifiers.
+
+Save as `~/.config/conky/find_drive_by_hardware.sh` and make it executable:
+
+<details>
+<summary>find_drive_by_hardware.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+
+# Find and monitor drives by their hardware characteristics (serial, model, size)
+# These don't change when you format the drive
+# Usage: ./find_drive_by_hardware.sh "identifier"
+#        where identifier can be:
+#        - Serial number (most reliable)
+#        - Model name
+#        - Model:Size combination
+#        - Custom identifier from config file
+
+IDENTIFIER="$1"
+CONFIG_FILE="$HOME/.config/conky/drive_mappings.conf"
+
+if [ -z "$IDENTIFIER" ]; then
+    echo "Not mounted"
+    exit 1
+fi
+
+# Function to get drive info using lsblk
+get_drive_info() {
+    # Get serial, model, size, mountpoint for all block devices
+    lsblk -o NAME,SERIAL,MODEL,SIZE,MOUNTPOINT,TYPE -P 2>/dev/null | grep 'TYPE="disk"\|TYPE="part"'
+}
+
+# Function to find by serial number
+find_by_serial() {
+    local serial="$1"
+    local mount_point
+    
+    # First find the device name by serial
+    local device=$(lsblk -o NAME,SERIAL -rn | grep -i "${serial}" | awk '{print $1}' | head -n1)
+    
+    if [ -n "$device" ]; then
+        # Then find any mountpoint for that device or its partitions
+        mount_point=$(lsblk -o NAME,MOUNTPOINT -rn | grep "^${device}" | awk '{print $2}' | grep -v '^$' | head -n1)
+        if [ -n "$mount_point" ]; then
+            echo "$mount_point"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Function to find by model
+find_by_model() {
+    local model="$1"
+    local mount_point
+    
+    # Try exact match first
+    mount_point=$(lsblk -o MODEL,MOUNTPOINT -rn | grep -i "^${model}" | awk '{print $2}' | grep -v '^$' | head -n1)
+    
+    # If not found, try partial match
+    if [ -z "$mount_point" ]; then
+        mount_point=$(lsblk -o MODEL,MOUNTPOINT -rn | grep -i "${model}" | awk '{print $2}' | grep -v '^$' | head -n1)
+    fi
+    
+    if [ -n "$mount_point" ]; then
+        echo "$mount_point"
+        return 0
+    fi
+    return 1
+}
+
+# Function to find by model and size combination
+find_by_model_size() {
+    local model="$1"
+    local size="$2"
+    local mount_point
+    
+    mount_point=$(lsblk -o MODEL,SIZE,MOUNTPOINT -rn | grep -i "${model}" | grep "${size}" | awk '{print $3}' | grep -v '^$' | head -n1)
+    
+    if [ -n "$mount_point" ]; then
+        echo "$mount_point"
+        return 0
+    fi
+    return 1
+}
+
+# Check if we have a config file with custom mappings
+if [ -f "$CONFIG_FILE" ]; then
+    # Read mapping from config file
+    # Format: IDENTIFIER:SERIAL or IDENTIFIER:MODEL:SIZE
+    while IFS=: read -r id value1 value2; do
+        # Skip comment lines
+        if [[ "$id" =~ ^[[:space:]]*# ]] || [ -z "$id" ]; then
+            continue
+        fi
+        
+        if [ "$id" = "$IDENTIFIER" ]; then
+            if [ -n "$value2" ]; then
+                # Model:Size format
+                MOUNT_POINT=$(find_by_model_size "$value1" "$value2")
+            else
+                # Try as serial first, then as model
+                MOUNT_POINT=$(find_by_serial "$value1") || MOUNT_POINT=$(find_by_model "$value1")
+            fi
+            break
+        fi
+    done < "$CONFIG_FILE"
+fi
+
+# If not found in config, try direct search
+if [ -z "$MOUNT_POINT" ]; then
+    # Try as serial number first (most specific)
+    MOUNT_POINT=$(find_by_serial "$IDENTIFIER")
+    
+    # If not found, try as model name
+    if [ -z "$MOUNT_POINT" ]; then
+        MOUNT_POINT=$(find_by_model "$IDENTIFIER")
+    fi
+fi
+
+# If we found a mount point, get the free space
+if [ -n "$MOUNT_POINT" ] && [ -d "$MOUNT_POINT" ]; then
+    FREE=$(df -h "$MOUNT_POINT" | awk 'NR==2 {print $4}')
+    TOTAL=$(df -h "$MOUNT_POINT" | awk 'NR==2 {print $2}')
+    
+    # Handle different units properly
+    FREE_NUM=$(echo "$FREE" | sed 's/[A-Za-z]*$//')
+    TOTAL_NUM=$(echo "$TOTAL" | sed 's/[A-Za-z]*$//')
+    FREE_UNIT=$(echo "$FREE" | sed 's/[0-9,.]*//g')
+    TOTAL_UNIT=$(echo "$TOTAL" | sed 's/[0-9,.]*//g')
+    
+    if [ "$FREE_UNIT" = "$TOTAL_UNIT" ] && [[ "$FREE_UNIT" =~ ^[GT]$ ]]; then
+        echo "${FREE_NUM}/${TOTAL_NUM}${FREE_UNIT}B"
+    else
+        echo "${FREE}/${TOTAL}"
+    fi
+else
+    echo "Not mounted"
+fi
+```
+</details>
+
+#### Configuration File: drive_mappings.conf
+
+This file maps friendly names to hardware identifiers.
+
+Save as `~/.config/conky/drive_mappings.conf`:
+
+```bash
+# Drive mappings configuration
+# Format: FRIENDLY_NAME:SERIAL_NUMBER
+# or:     FRIENDLY_NAME:MODEL_NAME:SIZE
+# 
+# To find your drive's serial numbers and models, run:
+# ~/.config/conky/list_drive_info.sh
+#
+# Examples:
+# Backup_Drive:WD-WX11D12345678
+# Data_SSD:Samsung_SSD_850:500G
+# External_USB:ST2000DM008:1.8T
+#
+# Add your drive mappings below:
+MyDrive1:YOUR_SERIAL_HERE
+MyDrive2:YOUR_MODEL_HERE
+MyDrive3:YOUR_MODEL_HERE:SIZE_HERE
+```
+
+#### Helper Script: list_drive_info.sh
+
+This script helps you find the hardware identifiers for your drives.
+
+Save as `~/.config/conky/list_drive_info.sh` and make it executable:
+
+<details>
+<summary>list_drive_info.sh (click to expand)</summary>
+
+```bash
+#!/bin/bash
+
+echo "Drive Hardware Information"
+echo "========================="
+echo ""
+echo "NAME        SERIAL              MODEL                    SIZE   LABEL           MOUNTPOINT"
+echo "------------------------------------------------------------------------------------------"
+
+lsblk -o NAME,SERIAL,MODEL,SIZE,LABEL,MOUNTPOINT | grep -E "^sd|^nvme" | while read line; do
+    # Skip partition lines (they start with ├─ or └─)
+    if [[ ! "$line" =~ ^[├└] ]]; then
+        echo "$line"
+    fi
+done
+
+echo ""
+echo "To use a drive in conky, add a line to ~/.config/conky/drive_mappings.conf:"
+echo "FRIENDLY_NAME:SERIAL_NUMBER"
+echo "or"
+echo "FRIENDLY_NAME:MODEL_NAME:SIZE"
+```
+</details>
+
+#### Drive-Specific Wrapper Scripts
+
+Create wrapper scripts for each drive you want to monitor. Here are three examples:
+
+**drive1_free.sh:**
+```bash
+#!/bin/bash
+# Find drive by its hardware characteristics
+exec ~/.config/conky/find_drive_by_hardware.sh "MyDrive1"
+```
+
+**drive2_free.sh:**
+```bash
+#!/bin/bash
+# Find drive by its hardware characteristics
+exec ~/.config/conky/find_drive_by_hardware.sh "MyDrive2"
+```
+
+**backup_drive_free.sh:**
+```bash
+#!/bin/bash
+# Find backup drive by its hardware characteristics
+exec ~/.config/conky/find_drive_by_hardware.sh "Backup_Drive"
+```
+
+Make all scripts executable:
+```bash
+chmod +x ~/.config/conky/find_drive_by_hardware.sh
+chmod +x ~/.config/conky/list_drive_info.sh
+chmod +x ~/.config/conky/drive1_free.sh
+chmod +x ~/.config/conky/drive2_free.sh
+chmod +x ~/.config/conky/backup_drive_free.sh
+```
+
+#### Complete Step-by-Step Setup Guide
+
+This guide will walk you through setting up drive monitoring from scratch. No prior scripting knowledge required!
+
+##### Step 1: Create the Main Scripts
+
+First, we'll create the two main scripts that do all the work.
+
+1. **Open a terminal** (Ctrl+Alt+T on most Linux systems)
+
+2. **Create the configuration directory if it doesn't exist:**
+   ```bash
+   mkdir -p ~/.config/conky
+   ```
+
+3. **Create the main drive finder script:**
+   ```bash
+   nano ~/.config/conky/find_drive_by_hardware.sh
+   ```
+   
+   Copy and paste the entire script content from the `find_drive_by_hardware.sh` section above, then:
+   - Press `Ctrl+O` to save
+   - Press `Enter` to confirm
+   - Press `Ctrl+X` to exit
+
+4. **Create the drive information helper script:**
+   ```bash
+   nano ~/.config/conky/list_drive_info.sh
+   ```
+   
+   Copy and paste the entire script content from the `list_drive_info.sh` section above, then save and exit (Ctrl+O, Enter, Ctrl+X)
+
+5. **Make both scripts executable:**
+   ```bash
+   chmod +x ~/.config/conky/find_drive_by_hardware.sh
+   chmod +x ~/.config/conky/list_drive_info.sh
+   ```
+
+##### Step 2: Find Your Drive Information
+
+1. **Run the drive information script:**
+   ```bash
+   ~/.config/conky/list_drive_info.sh
+   ```
+
+2. **You'll see output like this:**
+   ```
+   Drive Hardware Information
+   =========================
+   
+   NAME        SERIAL              MODEL                    SIZE   LABEL           MOUNTPOINT
+   ------------------------------------------------------------------------------------------
+   sda         S1234567890ABC      WD Blue SSD              500.0G BackupDrive     /mnt/backup
+   sdb         WD-WX11A12345678    WDC WD40EZRZ            4000.0G DataDrive       /media/data
+   nvme0n1     S5678ABCD12345      Samsung SSD 980         1000.0G                 /
+   ```
+
+3. **Write down the information for drives you want to monitor:**
+   - Note the SERIAL number (most reliable)
+   - Or note the MODEL name
+   - Also note any LABEL if you set one
+
+##### Step 3: Create Your Configuration File
+
+1. **Create the configuration file:**
+   ```bash
+   nano ~/.config/conky/drive_mappings.conf
+   ```
+
+2. **Add your drives using the information from Step 2:**
+   ```bash
+   # Drive mappings configuration
+   # Format: FRIENDLY_NAME:SERIAL_NUMBER
+   # or:     FRIENDLY_NAME:MODEL_NAME:SIZE
+   
+   # Example using the drives from step 2:
+   # (Replace these with your actual drive information!)
+   
+   My_Backup:S1234567890ABC
+   My_Storage:WD-WX11A12345678
+   System_Drive:S5678ABCD12345
+   External_USB:TOSHIBA_External:2000G
+   ```
+   
+   **Important:** 
+   - Replace `My_Backup`, `My_Storage`, etc. with whatever names you want to use
+   - Replace the serial numbers with YOUR actual serial numbers from step 2
+   - Don't use spaces in the friendly names (use underscores instead)
+
+3. **Save the file** (Ctrl+O, Enter, Ctrl+X)
+
+##### Step 4: Create Individual Scripts for Each Drive
+
+For EACH drive in your configuration, you need to create a small script. Here's how:
+
+1. **For your first drive (let's say you named it "My_Backup"):**
+   ```bash
+   nano ~/.config/conky/my_backup_free.sh
+   ```
+   
+   Type exactly this (replacing `My_Backup` with YOUR friendly name from the config):
+   ```bash
+   #!/bin/bash
+   exec ~/.config/conky/find_drive_by_hardware.sh "My_Backup"
+   ```
+   
+   Save and exit (Ctrl+O, Enter, Ctrl+X)
+
+2. **Make it executable:**
+   ```bash
+   chmod +x ~/.config/conky/my_backup_free.sh
+   ```
+
+3. **Repeat for each drive.** For example, if you have three drives:
+   
+   **Drive 2:**
+   ```bash
+   nano ~/.config/conky/my_storage_free.sh
+   ```
+   ```bash
+   #!/bin/bash
+   exec ~/.config/conky/find_drive_by_hardware.sh "My_Storage"
+   ```
+   ```bash
+   chmod +x ~/.config/conky/my_storage_free.sh
+   ```
+   
+   **Drive 3:**
+   ```bash
+   nano ~/.config/conky/system_drive_free.sh
+   ```
+   ```bash
+   #!/bin/bash
+   exec ~/.config/conky/find_drive_by_hardware.sh "System_Drive"
+   ```
+   ```bash
+   chmod +x ~/.config/conky/system_drive_free.sh
+   ```
+
+##### Step 5: Test Your Scripts
+
+Before adding to Conky, test that your scripts work:
+
+1. **Test each script:**
+   ```bash
+   ~/.config/conky/my_backup_free.sh
+   ```
+   
+   You should see output like: `350.2/500.0GB` or `Not mounted`
+
+2. **If you see "Not mounted" but the drive IS mounted:**
+   - Check your configuration file for typos
+   - Make sure the serial/model in your config matches exactly what `list_drive_info.sh` showed
+   - Ensure there's a blank line at the end of `drive_mappings.conf`
+
+##### Step 6: Add to Your Conky Configuration
+
+1. **Open your Conky configuration:**
+   ```bash
+   nano ~/.config/conky/conky.conf
+   ```
+
+2. **Find where you want to display drive information**
+
+3. **Replace old drive monitoring with the new scripts.**
+   
+   **Old way (what to look for):**
+   ```lua
+   ${fs_free /mnt/backup}
+   ${fs_free_perc /mnt/backup}%
+   ```
+   
+   **New way (what to replace it with):**
+   ```lua
+   ${execi 30 ~/.config/conky/my_backup_free.sh}
+   ```
+   
+   The `30` means update every 30 seconds. You can change this number.
+
+4. **Complete example for a Conky config section:**
+   ```lua
+   ${color gray}Storage:${color}
+   Backup:  ${execi 30 ~/.config/conky/my_backup_free.sh}
+   Storage: ${execi 30 ~/.config/conky/my_storage_free.sh}
+   System:  ${execi 30 ~/.config/conky/system_drive_free.sh}
+   ```
+
+5. **Save your conky.conf** (Ctrl+O, Enter, Ctrl+X)
+
+6. **Restart Conky to see the changes:**
+   ```bash
+   killall conky
+   conky &
+   ```
+
+##### Common Issues and Solutions
+
+**"Not mounted" when drive is mounted:**
+- Double-check serial numbers match exactly
+- Add a blank line at the end of drive_mappings.conf: `echo "" >> ~/.config/conky/drive_mappings.conf`
+- Check if another program (like Timeshift) is using the drive
+
+**"Permission denied" errors:**
+- Make sure all scripts are executable: `chmod +x ~/.config/conky/*.sh`
+
+**Script not found errors:**
+- Check that you're using the full path in conky.conf: `~/.config/conky/script_name.sh`
+- Verify the script exists: `ls ~/.config/conky/`
+
+##### Quick Reference - File Locations
+
+After setup, you'll have these files:
+```
+~/.config/conky/
+├── find_drive_by_hardware.sh    # Main script (don't edit)
+├── list_drive_info.sh          # Helper to show drive info
+├── drive_mappings.conf         # YOUR drive configuration
+├── my_backup_free.sh           # Script for drive 1
+├── my_storage_free.sh          # Script for drive 2
+└── system_drive_free.sh        # Script for drive 3
+```
+
+#### Advantages
+
+- **Survives mount point changes**: Works regardless of where drives are mounted
+- **Survives reformatting**: Serial numbers don't change when you format a drive
+- **Works with temporary mounts**: Handles drives mounted by backup software like Timeshift
+- **Easy to maintain**: Just update the config file when you add/remove drives
+
+#### Troubleshooting
+
+If a drive shows "Not mounted":
+1. Check if the drive is actually mounted: `lsblk`
+2. Verify the identifier in your config matches the actual hardware: `~/.config/conky/list_drive_info.sh`
+3. Ensure there's a newline at the end of `drive_mappings.conf`
+4. Check if the drive is being used by another process (like backup software)
 
 ### Conky Installer Script
 
