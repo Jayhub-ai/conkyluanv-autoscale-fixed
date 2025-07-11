@@ -694,24 +694,34 @@ Save as `~/.config/conky/list_drive_info.sh` and make it executable:
 ```bash
 #!/bin/bash
 
-echo "Drive Hardware Information"
-echo "========================="
-echo ""
-echo "NAME        SERIAL              MODEL                    SIZE   LABEL           MOUNTPOINT"
-echo "------------------------------------------------------------------------------------------"
+# Clean drive information script (one line per physical disk)
+# Shows SERIAL, MODEL, SIZE and any partition LABELs (decoded so spaces show
+# correctly). Useful when several disks share the same model name.
+#
+# Columns: DISK | SERIAL | MODEL | SIZE | PARTITION_LABELS
+#
+# Usage: bash list_drive_info.sh
 
-lsblk -o NAME,SERIAL,MODEL,SIZE,LABEL,MOUNTPOINT | grep -E "^sd|^nvme" | while read line; do
-    # Skip partition lines (they start with ├─ or └─)
-    if [[ ! "$line" =~ ^[├└] ]]; then
-        echo "$line"
-    fi
-done
+printf "%-6s %-18s %-28s %-8s %-s\n" "DISK" "SERIAL" "MODEL" "SIZE" "PARTITION_LABELS"
+echo "---------------------------------------------------------------------------------------------"
 
-echo ""
-echo "To use a drive in conky, add a line to ~/.config/conky/drive_mappings.conf:"
-echo "FRIENDLY_NAME:SERIAL_NUMBER"
-echo "or"
-echo "FRIENDLY_NAME:MODEL_NAME:SIZE"
+# helper awk to safely parse lsblk -P output preserving spaces
+awk_script='{
+  for(i=1;i<=NF;i++){
+    split($i,a,"="); key=a[1]; val=a[2]; gsub(/^\"|\"$/,"",val); data[key]=val;
+  }
+  printf "%s %s %s %s\n", data["NAME"], data["SERIAL"], data["MODEL"], data["SIZE"];
+}'
+
+while read -r NAME SERIAL MODEL SIZE; do
+  # Collect partition labels (non-empty, comma-separated) and decode \xNN escapes
+  LABELS=$(lsblk -r -n -o LABEL "/dev/$NAME" | awk 'NF' | while read -r L; do printf "%b\n" "$L"; done | paste -sd, -)
+  [[ -z $LABELS ]] && LABELS="-"
+  printf "%-6s %-18s %-28s %-8s %-s\n" "$NAME" "${SERIAL:--}" "${MODEL:--}" "$SIZE" "$LABELS"
+done < <(lsblk -d -o NAME,SERIAL,MODEL,SIZE -P -n | awk "$awk_script")
+
+echo
+echo "Add drives to ~/.config/conky/drive_mappings.conf using the SERIAL or MODEL column above."
 ```
 </details>
 
