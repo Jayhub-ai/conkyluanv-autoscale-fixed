@@ -120,7 +120,7 @@ jobs:
           echo "CC=gcc" | tee -a $GITHUB_ENV
           echo "CXX=g++" | tee -a $GITHUB_ENV
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install sccache
         run: .github/scripts/setup-sccache.sh
       - name: Load cached compilation artifacts
